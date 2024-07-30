@@ -8,3 +8,4 @@ This is being built for learning purposes only
 - [oxc](https://oxc.rs/)
 - [swc](https://swc.rs/)
 - [Biome](https://biomejs.dev/)
+- [Writing an Interpreter in Go](https://interpreterbook.com/) by Thorsten Ball

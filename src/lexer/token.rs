@@ -2,6 +2,48 @@
 pub enum Token {
     Eof,
 
+    // TODO: keywords (including contextual)
+
+    // reserved words https://tc39.es/ecma262/#sec-keywords-and-reserved-words
+    Await,
+    Break,
+    Case,
+    Catch,
+    Class,
+    Const,
+    Continue,
+    Debugger,
+    Default,
+    Delete,
+    Do,
+    Else,
+    Enum,
+    Export,
+    Extends,
+    False,
+    Finally,
+    For,
+    Function,
+    If,
+    Import,
+    In,
+    Instanceof,
+    New,
+    Null,
+    Return,
+    Super,
+    Switch,
+    This,
+    Throw,
+    True,
+    Try,
+    Typeof,
+    Var,
+    Void,
+    While,
+    With,
+    Yield,
+
     // punctuators https://tc39.es/ecma262/#sec-punctuators
     LeftBrace,               // `{`
     RightBrace,              // `{`
