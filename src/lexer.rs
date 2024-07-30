@@ -1,13 +1,12 @@
+mod token;
+
 use std::str::Chars;
+
+use self::token::Token;
 
 pub struct Lexer<'a> {
     input: &'a str,
     chars: Chars<'a>,
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub enum Token {
-    Eof,
 }
 
 impl<'a> Lexer<'a> {
