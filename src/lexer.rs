@@ -7,6 +7,8 @@ use self::token::Token;
 pub struct Lexer<'a> {
     input: &'a str,
     chars: Chars<'a>,
+
+    current_position: usize,
 }
 
 impl<'a> Lexer<'a> {
@@ -14,13 +16,14 @@ impl<'a> Lexer<'a> {
         Self {
             input: source_code,
             chars: source_code.chars(),
+            current_position: 0,
         }
     }
 
     fn next_token(&mut self) -> Token {
         self.skip_whitespace();
 
-        if let Some(ch) = self.chars.next() {
+        if let Some(ch) = self.next_char() {
             let token = match ch {
                 '{' => Token::LeftBrace,
                 '}' => Token::RightBrace,
@@ -31,10 +34,10 @@ impl<'a> Lexer<'a> {
                 '.' => {
                     let mut token = Token::Dot;
                     if let Some('.') = self.peek_char() {
-                        self.chars.next();
+                        self.next_char();
 
                         if let Some('.') = self.peek_char() {
-                            self.chars.next();
+                            self.next_char();
                             token = Token::DotDotDot
                         }
                     }
@@ -44,15 +47,15 @@ impl<'a> Lexer<'a> {
                 ',' => Token::Comma,
                 '<' => match self.peek_char() {
                     Some('=') => {
-                        self.chars.next();
+                        self.next_char();
                         Token::LessThanEqual
                     }
                     Some('<') => {
-                        self.chars.next();
+                        self.next_char();
 
                         match self.peek_char() {
                             Some('=') => {
-                                self.chars.next();
+                                self.next_char();
                                 Token::LeftShiftEqual
                             }
                             _ => Token::LeftShift,
@@ -62,15 +65,15 @@ impl<'a> Lexer<'a> {
                 },
                 '>' => match self.peek_char() {
                     Some('=') => {
-                        self.chars.next();
+                        self.next_char();
                         Token::GreaterThanEqual
                     }
                     Some('>') => {
-                        self.chars.next();
+                        self.next_char();
 
                         match self.peek_char() {
                             Some('>') => {
-                                self.chars.next();
+                                self.next_char();
 
                                 match self.peek_char() {
                                     Some('=') => Token::UnsignedRightShiftEqual,
@@ -78,7 +81,7 @@ impl<'a> Lexer<'a> {
                                 }
                             }
                             Some('=') => {
-                                self.chars.next();
+                                self.next_char();
                                 Token::RightShiftEqual
                             }
                             _ => Token::RightShift,
@@ -88,18 +91,18 @@ impl<'a> Lexer<'a> {
                 },
                 '=' => match self.peek_char() {
                     Some('=') => {
-                        self.chars.next();
+                        self.next_char();
 
                         match self.peek_char() {
                             Some('=') => {
-                                self.chars.next();
+                                self.next_char();
                                 Token::TripleEqual
                             }
                             _ => Token::DoubleEqual,
                         }
                     }
                     Some('>') => {
-                        self.chars.next();
+                        self.next_char();
                         Token::Arrow
                     }
                     _ => Token::Equal,
@@ -108,10 +111,10 @@ impl<'a> Lexer<'a> {
                     let mut token = Token::Bang;
 
                     if let Some('=') = self.peek_char() {
-                        self.chars.next();
+                        self.next_char();
 
                         if let Some('=') = self.peek_char() {
-                            self.chars.next();
+                            self.next_char();
                             token = Token::NotTripleEqual;
                         } else {
                             token = Token::NotDoubleEqual;
@@ -122,47 +125,47 @@ impl<'a> Lexer<'a> {
                 }
                 '+' => match self.peek_char() {
                     Some('+') => {
-                        self.chars.next();
+                        self.next_char();
                         Token::PlusPlus
                     }
                     Some('=') => {
-                        self.chars.next();
+                        self.next_char();
                         Token::PlusEqual
                     }
                     _ => Token::Plus,
                 },
                 '-' => match self.peek_char() {
                     Some('-') => {
-                        self.chars.next();
+                        self.next_char();
                         Token::MinusMinus
                     }
                     Some('=') => {
-                        self.chars.next();
+                        self.next_char();
                         Token::MinusEqual
                     }
                     _ => Token::Minus,
                 },
                 '*' => match self.peek_char() {
                     Some('*') => {
-                        self.chars.next();
+                        self.next_char();
 
                         match self.peek_char() {
                             Some('=') => {
-                                self.chars.next();
+                                self.next_char();
                                 Token::ExponentiationEqual
                             }
                             _ => Token::Exponentiation,
                         }
                     }
                     Some('=') => {
-                        self.chars.next();
+                        self.next_char();
                         Token::MultiplyEqual
                     }
                     _ => Token::Multiply,
                 },
                 '/' => match self.peek_char() {
                     Some('=') => {
-                        self.chars.next();
+                        self.next_char();
                         Token::DivisionEqual
                     }
                     _ => Token::Division,
@@ -170,49 +173,49 @@ impl<'a> Lexer<'a> {
 
                 '%' => match self.peek_char() {
                     Some('=') => {
-                        self.chars.next();
+                        self.next_char();
                         Token::RemainderEqual
                     }
                     _ => Token::Percent,
                 },
                 '&' => match self.peek_char() {
                     Some('&') => {
-                        self.chars.next();
+                        self.next_char();
 
                         match self.peek_char() {
                             Some('=') => {
-                                self.chars.next();
+                                self.next_char();
                                 Token::LogicalAndEqual
                             }
                             _ => Token::LogicalAnd,
                         }
                     }
                     Some('=') => {
-                        self.chars.next();
+                        self.next_char();
                         Token::BitwiseAndEqual
                     }
                     _ => Token::BitwiseAnd,
                 },
                 '|' => match self.peek_char() {
                     Some('|') => {
-                        self.chars.next();
+                        self.next_char();
                         match self.peek_char() {
                             Some('=') => {
-                                self.chars.next();
+                                self.next_char();
                                 Token::LogicalOrEqual
                             }
                             _ => Token::LogicalOr,
                         }
                     }
                     Some('=') => {
-                        self.chars.next();
+                        self.next_char();
                         Token::BitwiseOrEqual
                     }
                     _ => Token::BitwiseOr,
                 },
                 '^' => match self.peek_char() {
                     Some('=') => {
-                        self.chars.next();
+                        self.next_char();
                         Token::BitwiseXorEqual
                     }
                     _ => Token::BitwiseXor,
@@ -220,10 +223,10 @@ impl<'a> Lexer<'a> {
                 '~' => Token::BitwiseNot,
                 '?' => match self.peek_char() {
                     Some('?') => {
-                        self.chars.next();
+                        self.next_char();
                         match self.peek_char() {
                             Some('=') => {
-                                self.chars.next();
+                                self.next_char();
                                 Token::NullishCoalescingEqual
                             }
                             _ => Token::NullishCoalescing,
@@ -234,15 +237,30 @@ impl<'a> Lexer<'a> {
                 ':' => Token::Colon,
                 // TODO: allow unicode start per spec https://tc39.es/ecma262/#prod-IdentifierStart
                 'a'..='z' | 'A'..='Z' | '$' | '_' => return self.read_identifier(ch),
+                '#' => match self.peek_char() {
+                    Some('!') => {
+                        if self.current_position == 1 {
+                            self.read_hashbang_comment()
+                        } else {
+                            Token::Invalid
+                        }
+                    }
+                    _ => Token::PrivateIdentifier,
+                },
                 _ => Token::Eof,
             };
 
-            self.chars.next();
+            self.next_char();
 
             token
         } else {
             Token::Eof
         }
+    }
+
+    fn next_char(&mut self) -> Option<char> {
+        self.current_position += 1;
+        self.chars.next()
     }
 
     fn peek_char(&self) -> Option<char> {
@@ -252,7 +270,7 @@ impl<'a> Lexer<'a> {
     fn skip_whitespace(&mut self) {
         // TODO: this is probably not spec-compliant with all the unicode stuff, will fix later
         while let Some(' ' | '\t' | '\n' | '\r') = self.peek_char() {
-            self.chars.next();
+            self.next_char();
         }
     }
 
@@ -312,6 +330,18 @@ impl<'a> Lexer<'a> {
             "yield" => Token::Yield,
             _ => Token::Identifier(identifier_name),
         }
+    }
+
+    fn read_hashbang_comment(&mut self) -> Token {
+        while let Some(ch) = self.peek_char() {
+            if ch == '\n' || ch == '\r' {
+                break;
+            }
+
+            self.next_char();
+        }
+
+        Token::HashbangComment
     }
 }
 
@@ -424,6 +454,27 @@ mod tests {
             Token::With,
             Token::Yield,
             Token::Identifier("hello".to_string()),
+            Token::Eof,
+        ];
+
+        for token in expected {
+            assert_eq!(token, lexer.next_token());
+        }
+    }
+
+    #[test]
+    fn test_valid_hashbang_comment() {
+        let input = "#! this is a hashbang comment and nothing on this line becomes a token += * /
+var { ]
+";
+
+        let mut lexer = Lexer::new(input);
+
+        let expected: Vec<Token> = vec![
+            Token::HashbangComment,
+            Token::Var,
+            Token::LeftBrace,
+            Token::RightBracket,
             Token::Eof,
         ];
 

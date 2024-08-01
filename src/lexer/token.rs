@@ -1,5 +1,6 @@
 #[derive(Debug, PartialEq, Eq)]
 pub enum Token {
+    Invalid,
     Eof,
 
     // TODO: keywords (including contextual)
@@ -7,6 +8,9 @@ pub enum Token {
     // identifiers https://tc39.es/ecma262/#sec-names-and-keywords
     Identifier(String),
     PrivateIdentifier,
+
+    // hashbang comments https://tc39.es/ecma262/#sec-hashbang
+    HashbangComment,
 
     // reserved words https://tc39.es/ecma262/#sec-keywords-and-reserved-words
     Await,
