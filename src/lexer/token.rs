@@ -46,7 +46,7 @@ pub enum Token {
 
     // punctuators https://tc39.es/ecma262/#sec-punctuators
     LeftBrace,               // `{`
-    RightBrace,              // `{`
+    RightBrace,              // `}`
     LeftParen,               // `(`
     RightParen,              // `)`
     LeftBracket,             // `[`
