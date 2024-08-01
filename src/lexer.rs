@@ -232,7 +232,7 @@ impl<'a> Lexer<'a> {
                     _ => Token::QuestionMark,
                 },
                 ':' => Token::Colon,
-
+                'a'..='z' | 'A'..='Z' | '$' | '_' => return self.read_identifier(ch),
                 _ => Token::Eof,
             };
 
@@ -254,6 +254,63 @@ impl<'a> Lexer<'a> {
             self.chars.next();
         }
     }
+
+    fn read_identifier(&mut self, start_char: char) -> Token {
+        // TODO: this won't be performant. should just use start/end pointers and get the slice
+        // from source code
+        let mut identifier_name = String::new();
+        identifier_name.push(start_char);
+
+        for ch in self.chars.by_ref() {
+            if matches!(ch, 'a'..='z' | 'A'..='Z' | '$' | '_') {
+                identifier_name.push(ch);
+            } else {
+                break;
+            }
+        }
+
+        match identifier_name.as_str() {
+            "await" => Token::Await,
+            "break" => Token::Break,
+            "case" => Token::Case,
+            "catch" => Token::Catch,
+            "class" => Token::Class,
+            "const" => Token::Const,
+            "continue" => Token::Continue,
+            "debugger" => Token::Debugger,
+            "default" => Token::Default,
+            "delete" => Token::Delete,
+            "do" => Token::Do,
+            "else" => Token::Else,
+            "enum" => Token::Enum,
+            "export" => Token::Export,
+            "extends" => Token::Extends,
+            "false" => Token::False,
+            "finally" => Token::Finally,
+            "for" => Token::For,
+            "function" => Token::Function,
+            "if" => Token::If,
+            "import" => Token::Import,
+            "in" => Token::In,
+            "instanceof" => Token::Instanceof,
+            "new" => Token::New,
+            "null" => Token::Null,
+            "return" => Token::Return,
+            "super" => Token::Super,
+            "switch" => Token::Switch,
+            "this" => Token::This,
+            "throw" => Token::Throw,
+            "true" => Token::True,
+            "try" => Token::Try,
+            "typeof" => Token::Typeof,
+            "var" => Token::Var,
+            "void" => Token::Void,
+            "while" => Token::While,
+            "with" => Token::With,
+            "yield" => Token::Yield,
+            _ => Token::Identifier(identifier_name),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -261,9 +318,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn next_token() {
+    fn test_next_token() {
         let input =
-            "{ } ( ) [ ] . ... ; , < > <= >= = == ! != === !== + - * / % ** ++ -- << >> >>> / % & | ^ ~ ? : && || ?? += -= *= /= %= => **= <<= >>= >>>= &= |= ^= &&= ||= ??=";
+            "{ } ( ) [ ] . ... ; , < > <= >= = == ! != === !== + - * / % ** ++ -- << >> >>> / % & | ^ ~ ? : && || ?? += -= *= /= %= => **= <<= >>= >>>= &= |= ^= &&= ||= ??= await break case catch class const continue debugger default delete do else enum export extends false finally for function if import in instanceof new null return super switch this throw true try typeof var void while with yield hello";
 
         let mut lexer = Lexer::new(input);
 
@@ -326,6 +383,45 @@ mod tests {
             Token::LogicalAndEqual,
             Token::LogicalOrEqual,
             Token::NullishCoalescingEqual,
+            Token::Await,
+            Token::Break,
+            Token::Case,
+            Token::Catch,
+            Token::Class,
+            Token::Const,
+            Token::Continue,
+            Token::Debugger,
+            Token::Default,
+            Token::Delete,
+            Token::Do,
+            Token::Else,
+            Token::Enum,
+            Token::Export,
+            Token::Extends,
+            Token::False,
+            Token::Finally,
+            Token::For,
+            Token::Function,
+            Token::If,
+            Token::Import,
+            Token::In,
+            Token::Instanceof,
+            Token::New,
+            Token::Null,
+            Token::Return,
+            Token::Super,
+            Token::Switch,
+            Token::This,
+            Token::Throw,
+            Token::True,
+            Token::Try,
+            Token::Typeof,
+            Token::Var,
+            Token::Void,
+            Token::While,
+            Token::With,
+            Token::Yield,
+            Token::Identifier("hello".to_string()),
             Token::Eof,
         ];
 

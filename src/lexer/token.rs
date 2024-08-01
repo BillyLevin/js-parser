@@ -4,6 +4,10 @@ pub enum Token {
 
     // TODO: keywords (including contextual)
 
+    // identifiers https://tc39.es/ecma262/#sec-names-and-keywords
+    Identifier(String),
+    PrivateIdentifier,
+
     // reserved words https://tc39.es/ecma262/#sec-keywords-and-reserved-words
     Await,
     Break,
