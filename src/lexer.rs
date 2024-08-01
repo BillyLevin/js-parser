@@ -232,6 +232,7 @@ impl<'a> Lexer<'a> {
                     _ => Token::QuestionMark,
                 },
                 ':' => Token::Colon,
+                // TODO: allow unicode start per spec https://tc39.es/ecma262/#prod-IdentifierStart
                 'a'..='z' | 'A'..='Z' | '$' | '_' => return self.read_identifier(ch),
                 _ => Token::Eof,
             };
@@ -262,6 +263,7 @@ impl<'a> Lexer<'a> {
         identifier_name.push(start_char);
 
         for ch in self.chars.by_ref() {
+            // TODO: allow unicode continue per spec https://tc39.es/ecma262/#prod-IdentifierPartChar
             if matches!(ch, 'a'..='z' | 'A'..='Z' | '$' | '_') {
                 identifier_name.push(ch);
             } else {
