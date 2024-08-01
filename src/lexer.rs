@@ -482,4 +482,40 @@ var { ]
             assert_eq!(token, lexer.next_token());
         }
     }
+
+    #[test]
+    fn test_invalid_hashbang_comment_leading_whitespace() {
+        let input = "   #! oops";
+
+        let mut lexer = Lexer::new(input);
+
+        let expected: Vec<Token> = vec![
+            Token::Invalid,
+            Token::Identifier("oops".to_string()),
+            Token::Eof,
+        ];
+
+        for token in expected {
+            assert_eq!(token, lexer.next_token());
+        }
+    }
+
+    #[test]
+    fn test_invalid_hashbang_comment_not_first_line() {
+        let input = "var
+#! oops";
+
+        let mut lexer = Lexer::new(input);
+
+        let expected: Vec<Token> = vec![
+            Token::Var,
+            Token::Invalid,
+            Token::Identifier("oops".to_string()),
+            Token::Eof,
+        ];
+
+        for token in expected {
+            assert_eq!(token, lexer.next_token());
+        }
+    }
 }
