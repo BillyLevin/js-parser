@@ -245,7 +245,7 @@ impl<'a> Lexer<'a> {
                             Token::Invalid
                         }
                     }
-                    _ => Token::PrivateIdentifier,
+                    _ => return self.read_private_identifier(),
                 },
                 _ => Token::Eof,
             };
@@ -332,6 +332,23 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    fn read_private_identifier(&mut self) -> Token {
+        // TODO: this won't be performant. should just use start/end pointers and get the slice
+        // from source code
+        let mut identifier_name = String::new();
+
+        for ch in self.chars.by_ref() {
+            // TODO: allow unicode continue per spec https://tc39.es/ecma262/#prod-IdentifierPartChar
+            if matches!(ch, 'a'..='z' | 'A'..='Z' | '$' | '_') {
+                identifier_name.push(ch);
+            } else {
+                break;
+            }
+        }
+
+        Token::PrivateIdentifier(identifier_name)
+    }
+
     fn read_hashbang_comment(&mut self) -> Token {
         while let Some(ch) = self.peek_char() {
             if ch == '\n' || ch == '\r' {
@@ -352,7 +369,7 @@ mod tests {
     #[test]
     fn test_next_token() {
         let input =
-            "{ } ( ) [ ] . ... ; , < > <= >= = == ! != === !== + - * / % ** ++ -- << >> >>> / % & | ^ ~ ? : && || ?? += -= *= /= %= => **= <<= >>= >>>= &= |= ^= &&= ||= ??= await break case catch class const continue debugger default delete do else enum export extends false finally for function if import in instanceof new null return super switch this throw true try typeof var void while with yield hello";
+            "{ } ( ) [ ] . ... ; , < > <= >= = == ! != === !== + - * / % ** ++ -- << >> >>> / % & | ^ ~ ? : && || ?? += -= *= /= %= => **= <<= >>= >>>= &= |= ^= &&= ||= ??= await break case catch class const continue debugger default delete do else enum export extends false finally for function if import in instanceof new null return super switch this throw true try typeof var void while with yield hello #thisisprivate hi";
 
         let mut lexer = Lexer::new(input);
 
@@ -454,6 +471,8 @@ mod tests {
             Token::With,
             Token::Yield,
             Token::Identifier("hello".to_string()),
+            Token::PrivateIdentifier("thisisprivate".to_string()),
+            Token::Identifier("hi".to_string()),
             Token::Eof,
         ];
 

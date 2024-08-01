@@ -7,7 +7,7 @@ pub enum Token {
 
     // identifiers https://tc39.es/ecma262/#sec-names-and-keywords
     Identifier(String),
-    PrivateIdentifier,
+    PrivateIdentifier(String),
 
     // hashbang comments https://tc39.es/ecma262/#sec-hashbang
     HashbangComment,
