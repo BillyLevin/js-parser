@@ -133,4 +133,7 @@ pub enum Token {
     LogicalOrEqual,          // `||=`
     NullishCoalescingEqual,  // `??=`
     Arrow,                   // `=>`
+
+    // literals https://tc39.es/ecma262/#sec-ecmascript-language-lexical-grammar-literals
+    String(String),
 }

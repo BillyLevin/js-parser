@@ -255,6 +255,8 @@ impl<'a> Lexer<'a> {
                     }
                     _ => return self.read_private_identifier(),
                 },
+                '\'' => return self.read_single_quote_string(),
+                '"' => return self.read_double_quote_string(),
                 _ => Token::Eof,
             };
 
@@ -361,7 +363,7 @@ impl<'a> Lexer<'a> {
         // from source code
         let mut identifier_name = String::new();
 
-        for ch in self.chars.by_ref() {
+        while let Some(ch) = self.next_char() {
             // TODO: allow unicode continue per spec https://tc39.es/ecma262/#prod-IdentifierPartChar
             if matches!(ch, 'a'..='z' | 'A'..='Z' | '$' | '_') {
                 identifier_name.push(ch);
@@ -411,6 +413,32 @@ impl<'a> Lexer<'a> {
 
         Token::MultiLineComment
     }
+
+    fn read_single_quote_string(&mut self) -> Token {
+        let mut string_literal = String::new();
+
+        while let Some(ch) = self.next_char() {
+            match ch {
+                '\'' => break,
+                _ => string_literal.push(ch),
+            };
+        }
+
+        Token::String(string_literal)
+    }
+
+    fn read_double_quote_string(&mut self) -> Token {
+        let mut string_literal = String::new();
+
+        while let Some(ch) = self.next_char() {
+            match ch {
+                '"' => break,
+                _ => string_literal.push(ch),
+            };
+        }
+
+        Token::String(string_literal)
+    }
 }
 
 #[cfg(test)]
@@ -428,6 +456,8 @@ this is all ignored + * > <<
 */const
 let static implements interface package private protected public
 as async from get meta of set target
+'this is a string 123'
+\"this is another string 456\"
 ";
 
         let mut lexer = Lexer::new(input);
@@ -552,6 +582,8 @@ as async from get meta of set target
             Token::Of,
             Token::Set,
             Token::Target,
+            Token::String("this is a string 123".to_string()),
+            Token::String("this is another string 456".to_string()),
             Token::Eof,
         ];
 
