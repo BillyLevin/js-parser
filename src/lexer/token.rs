@@ -3,8 +3,6 @@ pub enum Token {
     Invalid,
     Eof,
 
-    // TODO: keywords (including contextual)
-
     // identifiers https://tc39.es/ecma262/#sec-names-and-keywords
     Identifier(String),
     PrivateIdentifier(String),
@@ -16,7 +14,7 @@ pub enum Token {
     // hashbang comments https://tc39.es/ecma262/#sec-hashbang
     HashbangComment,
 
-    // reserved words https://tc39.es/ecma262/#sec-keywords-and-reserved-words
+    // reserved words https://tc39.es/ecma262/#prod-ReservedWord
     Await,
     Break,
     Case,
@@ -55,6 +53,28 @@ pub enum Token {
     While,
     With,
     Yield,
+
+    // contextually disallowed identifiers / future reserved keywords (grouped together as there's
+    // some overlap) https://tc39.es/ecma262/#sec-keywords-and-reserved-words
+    Let,
+    Static,
+    Implements,
+    Interface,
+    Package,
+    Private,
+    Protected,
+    Public,
+
+    // contextual keywords. these are always allowed as identifiers, but are sometimes also keywords in
+    // productions where `Identifier` is not allowed
+    As,
+    Async,
+    From,
+    Get,
+    Meta,
+    Of,
+    Set,
+    Target,
 
     // punctuators https://tc39.es/ecma262/#sec-punctuators
     LeftBrace,               // `{`

@@ -336,6 +336,22 @@ impl<'a> Lexer<'a> {
             "while" => Token::While,
             "with" => Token::With,
             "yield" => Token::Yield,
+            "let" => Token::Let,
+            "static" => Token::Static,
+            "implements" => Token::Implements,
+            "interface" => Token::Interface,
+            "package" => Token::Package,
+            "private" => Token::Private,
+            "protected" => Token::Protected,
+            "public" => Token::Public,
+            "as" => Token::As,
+            "async" => Token::Async,
+            "from" => Token::From,
+            "get" => Token::Get,
+            "meta" => Token::Meta,
+            "of" => Token::Of,
+            "set" => Token::Set,
+            "target" => Token::Target,
             _ => Token::Identifier(identifier_name),
         }
     }
@@ -410,6 +426,8 @@ var
 hello
 this is all ignored + * > <<
 */const
+let static implements interface package private protected public
+as async from get meta of set target
 ";
 
         let mut lexer = Lexer::new(input);
@@ -518,6 +536,22 @@ this is all ignored + * > <<
             Token::Var,
             Token::MultiLineComment,
             Token::Const,
+            Token::Let,
+            Token::Static,
+            Token::Implements,
+            Token::Interface,
+            Token::Package,
+            Token::Private,
+            Token::Protected,
+            Token::Public,
+            Token::As,
+            Token::Async,
+            Token::From,
+            Token::Get,
+            Token::Meta,
+            Token::Of,
+            Token::Set,
+            Token::Target,
             Token::Eof,
         ];
 
