@@ -9,6 +9,10 @@ pub enum Token {
     Identifier(String),
     PrivateIdentifier(String),
 
+    // comments https://tc39.es/ecma262/#sec-comments
+    SingleLineComment,
+    MultiLineComment,
+
     // hashbang comments https://tc39.es/ecma262/#sec-hashbang
     HashbangComment,
 

@@ -168,6 +168,14 @@ impl<'a> Lexer<'a> {
                         self.next_char();
                         Token::DivisionEqual
                     }
+                    Some('/') => {
+                        self.next_char();
+                        return self.read_single_line_comment();
+                    }
+                    Some('*') => {
+                        self.next_char();
+                        return self.read_multi_line_comment();
+                    }
                     _ => Token::Division,
                 },
 
@@ -360,6 +368,33 @@ impl<'a> Lexer<'a> {
 
         Token::HashbangComment
     }
+
+    fn read_single_line_comment(&mut self) -> Token {
+        while let Some(ch) = self.peek_char() {
+            if ch == '\n' || ch == '\r' {
+                break;
+            }
+
+            self.next_char();
+        }
+
+        Token::SingleLineComment
+    }
+
+    fn read_multi_line_comment(&mut self) -> Token {
+        while let Some(ch) = self.peek_char() {
+            self.next_char();
+
+            if ch == '*' {
+                if let Some('/') = self.peek_char() {
+                    self.next_char();
+                    break;
+                }
+            }
+        }
+
+        Token::MultiLineComment
+    }
 }
 
 #[cfg(test)]
@@ -369,7 +404,13 @@ mod tests {
     #[test]
     fn test_next_token() {
         let input =
-            "{ } ( ) [ ] . ... ; , < > <= >= = == ! != === !== + - * / % ** ++ -- << >> >>> / % & | ^ ~ ? : && || ?? += -= *= /= %= => **= <<= >>= >>>= &= |= ^= &&= ||= ??= await break case catch class const continue debugger default delete do else enum export extends false finally for function if import in instanceof new null return super switch this throw true try typeof var void while with yield hello #thisisprivate hi";
+            "{ } ( ) [ ] . ... ; , < > <= >= = == ! != === !== + - * / % ** ++ -- << >> >>> / % & | ^ ~ ? : && || ?? += -= *= /= %= => **= <<= >>= >>>= &= |= ^= &&= ||= ??= await break case catch class const continue debugger default delete do else enum export extends false finally for function if import in instanceof new null return super switch this throw true try typeof var void while with yield hello #thisisprivate hi // single line comment *
+var
+/*
+hello
+this is all ignored + * > <<
+*/const
+";
 
         let mut lexer = Lexer::new(input);
 
@@ -473,6 +514,10 @@ mod tests {
             Token::Identifier("hello".to_string()),
             Token::PrivateIdentifier("thisisprivate".to_string()),
             Token::Identifier("hi".to_string()),
+            Token::SingleLineComment,
+            Token::Var,
+            Token::MultiLineComment,
+            Token::Const,
             Token::Eof,
         ];
 
