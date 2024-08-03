@@ -257,6 +257,7 @@ impl<'a> Lexer<'a> {
                 },
                 '\'' => return self.read_single_quote_string(),
                 '"' => return self.read_double_quote_string(),
+                '1'..='9' => return self.read_decimal(ch),
                 _ => Token::Eof,
             };
 
@@ -439,6 +440,63 @@ impl<'a> Lexer<'a> {
 
         Token::String(string_literal)
     }
+
+    fn read_decimal(&mut self, start_char: char) -> Token {
+        let mut number_literal = String::new();
+        number_literal.push(start_char);
+
+        let mut has_decimal_point = false;
+
+        let mut has_exponent = false;
+
+        while let Some(ch) = self.next_char() {
+            match ch {
+                '0'..='9' => number_literal.push(ch),
+                '.' => {
+                    if has_decimal_point {
+                        break;
+                    } else {
+                        has_decimal_point = true;
+                        number_literal.push('.');
+                    }
+                }
+                '_' => continue,
+                'e' | 'E' => {
+                    has_exponent = true;
+                    break;
+                }
+                _ => break,
+            };
+        }
+
+        if has_exponent {
+            let mut exponent_literal = String::from("e");
+
+            while let Some(ch) = self.next_char() {
+                match ch {
+                    '+' | '-' => {
+                        if exponent_literal.len() == 1 {
+                            exponent_literal.push(ch);
+                        } else {
+                            return Token::Invalid;
+                        }
+                    }
+                    '0'..='9' => {
+                        exponent_literal.push(ch);
+                    }
+                    '_' => continue,
+                    _ => break,
+                }
+            }
+
+            number_literal.push_str(&exponent_literal);
+        }
+
+        match number_literal.parse() {
+            Ok(num) => Token::Decimal(num),
+            Err(_) => Token::Invalid,
+        }
+    }
 }
 
 #[cfg(test)]
@@ -458,6 +516,7 @@ let static implements interface package private protected public
 as async from get meta of set target
 'this is a string 123'
 \"this is another string 456\"
+123 123.456 456_789 123e2 123e+2 123e-2 456E2 456E+2 456E-2
 ";
 
         let mut lexer = Lexer::new(input);
@@ -584,6 +643,15 @@ as async from get meta of set target
             Token::Target,
             Token::String("this is a string 123".to_string()),
             Token::String("this is another string 456".to_string()),
+            Token::Decimal(123.0),
+            Token::Decimal(123.456),
+            Token::Decimal(456789.0),
+            Token::Decimal(12300.0),
+            Token::Decimal(12300.0),
+            Token::Decimal(1.23),
+            Token::Decimal(45600.0),
+            Token::Decimal(45600.0),
+            Token::Decimal(4.56),
             Token::Eof,
         ];
 

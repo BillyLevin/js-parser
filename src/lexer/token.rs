@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq)]
 pub enum Token {
     Invalid,
     Eof,
@@ -134,6 +134,8 @@ pub enum Token {
     NullishCoalescingEqual,  // `??=`
     Arrow,                   // `=>`
 
-    // literals https://tc39.es/ecma262/#sec-ecmascript-language-lexical-grammar-literals
+    // string literals https://tc39.es/ecma262/#sec-literals-string-literals
     String(String),
+    // numeric literals https://tc39.es/ecma262/#sec-literals-numeric-literals
+    Decimal(f64),
 }
