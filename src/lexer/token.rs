@@ -140,4 +140,5 @@ pub enum Token {
     // numeric literals https://tc39.es/ecma262/#sec-literals-numeric-literals
     Decimal(f64),
     Binary(u64),
+    Octal(u64),
 }

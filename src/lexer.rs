@@ -502,6 +502,7 @@ impl<'a> Lexer<'a> {
     fn read_number_starting_with_zero(&mut self) -> Token {
         match self.next_char() {
             Some('b' | 'B') => self.read_binary(),
+            Some('o' | 'O') => self.read_octal(),
             _ => Token::Invalid,
         }
     }
@@ -519,6 +520,20 @@ impl<'a> Lexer<'a> {
         }
 
         Token::Binary(numeric_value)
+    }
+
+    fn read_octal(&mut self) -> Token {
+        let mut numeric_value = 0u64;
+
+        while let Some(ch) = self.next_char() {
+            match ch {
+                '0'..='7' => numeric_value = numeric_value * 8 + (ch.to_digit(10).unwrap() as u64),
+                '_' => continue,
+                _ => break,
+            };
+        }
+
+        Token::Octal(numeric_value)
     }
 }
 
@@ -540,7 +555,8 @@ as async from get meta of set target
 'this is a string 123'
 \"this is another string 456\"
 123 123.456 456_789 123e2 123e+2 123e-2 456E2 456E+2 456E-2
-0b10101 0b10_11
+0b10101 0b10_11 0B10101 0B10_11
+0o1234 0o5_67 0O12_34 0O567
 ";
 
         let mut lexer = Lexer::new(input);
@@ -678,6 +694,12 @@ as async from get meta of set target
             Token::Decimal(4.56),
             Token::Binary(21),
             Token::Binary(11),
+            Token::Binary(21),
+            Token::Binary(11),
+            Token::Octal(668),
+            Token::Octal(375),
+            Token::Octal(668),
+            Token::Octal(375),
             Token::Eof,
         ];
 
