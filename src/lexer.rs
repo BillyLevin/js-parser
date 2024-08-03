@@ -503,6 +503,7 @@ impl<'a> Lexer<'a> {
         match self.next_char() {
             Some('b' | 'B') => self.read_binary(),
             Some('o' | 'O') => self.read_octal(),
+            Some('x' | 'X') => self.read_hex(),
             _ => Token::Invalid,
         }
     }
@@ -535,6 +536,22 @@ impl<'a> Lexer<'a> {
 
         Token::Octal(numeric_value)
     }
+
+    fn read_hex(&mut self) -> Token {
+        let mut numeric_value = 0u64;
+
+        while let Some(ch) = self.next_char() {
+            match ch {
+                '0'..='9' => numeric_value = numeric_value * 16 + (ch.to_digit(10).unwrap() as u64),
+                'a'..='f' => numeric_value = numeric_value * 16 + (ch as u64 - 'a' as u64 + 10),
+                'A'..='F' => numeric_value = numeric_value * 16 + (ch as u64 - 'A' as u64 + 10),
+                '_' => continue,
+                _ => break,
+            };
+        }
+
+        Token::Hex(numeric_value)
+    }
 }
 
 #[cfg(test)]
@@ -557,6 +574,7 @@ as async from get meta of set target
 123 123.456 456_789 123e2 123e+2 123e-2 456E2 456E+2 456E-2
 0b10101 0b10_11 0B10101 0B10_11
 0o1234 0o5_67 0O12_34 0O567
+0x456F3d 0x09abcF 0X45_6F3d 0x09ab_cF
 ";
 
         let mut lexer = Lexer::new(input);
@@ -700,6 +718,10 @@ as async from get meta of set target
             Token::Octal(375),
             Token::Octal(668),
             Token::Octal(375),
+            Token::Hex(4550461),
+            Token::Hex(633807),
+            Token::Hex(4550461),
+            Token::Hex(633807),
             Token::Eof,
         ];
 

@@ -141,4 +141,5 @@ pub enum Token {
     Decimal(f64),
     Binary(u64),
     Octal(u64),
+    Hex(u64),
 }
