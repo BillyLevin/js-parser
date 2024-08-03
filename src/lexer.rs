@@ -258,6 +258,7 @@ impl<'a> Lexer<'a> {
                 '\'' => return self.read_single_quote_string(),
                 '"' => return self.read_double_quote_string(),
                 '1'..='9' => return self.read_decimal(ch),
+                '0' => return self.read_number_starting_with_zero(),
                 _ => Token::Eof,
             };
 
@@ -497,6 +498,28 @@ impl<'a> Lexer<'a> {
             Err(_) => Token::Invalid,
         }
     }
+
+    fn read_number_starting_with_zero(&mut self) -> Token {
+        match self.next_char() {
+            Some('b' | 'B') => self.read_binary(),
+            _ => Token::Invalid,
+        }
+    }
+
+    fn read_binary(&mut self) -> Token {
+        let mut numeric_value = 0u64;
+
+        while let Some(ch) = self.next_char() {
+            match ch {
+                '0' => numeric_value *= 2,
+                '1' => numeric_value = numeric_value * 2 + 1,
+                '_' => continue,
+                _ => break,
+            }
+        }
+
+        Token::Binary(numeric_value)
+    }
 }
 
 #[cfg(test)]
@@ -517,6 +540,7 @@ as async from get meta of set target
 'this is a string 123'
 \"this is another string 456\"
 123 123.456 456_789 123e2 123e+2 123e-2 456E2 456E+2 456E-2
+0b10101 0b10_11
 ";
 
         let mut lexer = Lexer::new(input);
@@ -652,6 +676,8 @@ as async from get meta of set target
             Token::Decimal(45600.0),
             Token::Decimal(45600.0),
             Token::Decimal(4.56),
+            Token::Binary(21),
+            Token::Binary(11),
             Token::Eof,
         ];
 
