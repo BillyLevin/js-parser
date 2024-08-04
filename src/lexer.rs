@@ -520,7 +520,20 @@ impl<'a> Lexer<'a> {
                 self.read_hex()
             }
             Some('0'..='9') => self.read_legacy_octal_or_decimal(),
-            _ => Token::Invalid,
+            Some('.') => {
+                self.next_char();
+                self.read_after_decimal_point()
+            }
+            // from the spec: "The `SourceCharacter` immediately following a `NumericLiteral` must
+            // not be an `IdentifierStart` or `DecimalDigit`"
+            Some(ch) => {
+                if matches!(ch, 'a'..='z' | 'A'..='Z' | '$' | '_') {
+                    Token::Invalid
+                } else {
+                    Token::Decimal(0.0)
+                }
+            }
+            None => Token::Decimal(0.0),
         }
     }
 
@@ -582,7 +595,7 @@ impl<'a> Lexer<'a> {
 
         for ch in cloned {
             match ch {
-                '0'..='7' => continue,
+                '0'..='7' => (),
                 '8' | '9' => is_decimal = true,
                 _ => break,
             };
@@ -599,6 +612,51 @@ impl<'a> Lexer<'a> {
             } else {
                 Token::Invalid
             }
+        }
+    }
+
+    fn read_after_decimal_point(&mut self) -> Token {
+        let mut has_exponent = false;
+        let mut number_literal = String::from("0.");
+
+        while let Some(ch) = self.next_char() {
+            match ch {
+                '0'..='9' => number_literal.push(ch),
+                'e' | 'E' => {
+                    has_exponent = true;
+                    break;
+                }
+                '_' => continue,
+                _ => break,
+            };
+        }
+
+        if has_exponent {
+            let mut exponent_literal = String::from("e");
+
+            while let Some(ch) = self.next_char() {
+                match ch {
+                    '+' | '-' => {
+                        if exponent_literal.len() == 1 {
+                            exponent_literal.push(ch);
+                        } else {
+                            return Token::Invalid;
+                        }
+                    }
+                    '0'..='9' => {
+                        exponent_literal.push(ch);
+                    }
+                    '_' => continue,
+                    _ => break,
+                }
+            }
+
+            number_literal.push_str(&exponent_literal);
+        }
+
+        match number_literal.parse() {
+            Ok(num) => Token::Decimal(num),
+            Err(_) => Token::Invalid,
         }
     }
 }
@@ -628,6 +686,9 @@ as async from get meta of set target
 089234.6
 078
 087e2
+0
+0.34
+0.2_3e+2
 ";
 
         let mut lexer = Lexer::new(input);
@@ -779,6 +840,9 @@ as async from get meta of set target
             Token::Decimal(89234.6),
             Token::Decimal(78.0),
             Token::Decimal(8700.0),
+            Token::Decimal(0.0),
+            Token::Decimal(0.34),
+            Token::Decimal(23.0),
             Token::Eof,
         ];
 
