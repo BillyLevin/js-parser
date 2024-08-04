@@ -257,7 +257,7 @@ impl<'a> Lexer<'a> {
                 },
                 '\'' => return self.read_single_quote_string(),
                 '"' => return self.read_double_quote_string(),
-                '1'..='9' => return self.read_decimal(ch),
+                '1'..='9' => return self.read_decimal(ch, true),
                 '0' => return self.read_number_starting_with_zero(),
                 _ => Token::Eof,
             };
@@ -442,7 +442,7 @@ impl<'a> Lexer<'a> {
         Token::String(string_literal)
     }
 
-    fn read_decimal(&mut self, start_char: char) -> Token {
+    fn read_decimal(&mut self, start_char: char, underscores_allowed: bool) -> Token {
         let mut number_literal = String::new();
         number_literal.push(start_char);
 
@@ -461,10 +461,16 @@ impl<'a> Lexer<'a> {
                         number_literal.push('.');
                     }
                 }
-                '_' => continue,
                 'e' | 'E' => {
                     has_exponent = true;
                     break;
+                }
+                '_' => {
+                    if underscores_allowed {
+                        continue;
+                    } else {
+                        break;
+                    }
                 }
                 _ => break,
             };
@@ -500,10 +506,20 @@ impl<'a> Lexer<'a> {
     }
 
     fn read_number_starting_with_zero(&mut self) -> Token {
-        match self.next_char() {
-            Some('b' | 'B') => self.read_binary(),
-            Some('o' | 'O') => self.read_octal(),
-            Some('x' | 'X') => self.read_hex(),
+        match self.peek_char() {
+            Some('b' | 'B') => {
+                self.next_char();
+                self.read_binary()
+            }
+            Some('o' | 'O') => {
+                self.next_char();
+                self.read_octal(true)
+            }
+            Some('x' | 'X') => {
+                self.next_char();
+                self.read_hex()
+            }
+            Some('0'..='9') => self.read_legacy_octal_or_decimal(),
             _ => Token::Invalid,
         }
     }
@@ -523,13 +539,19 @@ impl<'a> Lexer<'a> {
         Token::Binary(numeric_value)
     }
 
-    fn read_octal(&mut self) -> Token {
+    fn read_octal(&mut self, underscores_allowed: bool) -> Token {
         let mut numeric_value = 0u64;
 
         while let Some(ch) = self.next_char() {
             match ch {
                 '0'..='7' => numeric_value = numeric_value * 8 + (ch.to_digit(10).unwrap() as u64),
-                '_' => continue,
+                '_' => {
+                    if underscores_allowed {
+                        continue;
+                    } else {
+                        break;
+                    }
+                }
                 _ => break,
             };
         }
@@ -551,6 +573,33 @@ impl<'a> Lexer<'a> {
         }
 
         Token::Hex(numeric_value)
+    }
+
+    fn read_legacy_octal_or_decimal(&mut self) -> Token {
+        let mut is_decimal = false;
+
+        let cloned = self.chars.clone();
+
+        for ch in cloned {
+            match ch {
+                '0'..='7' => continue,
+                '8' | '9' => is_decimal = true,
+                _ => break,
+            };
+        }
+
+        if is_decimal {
+            let start_ch = self.next_char().unwrap();
+            self.read_decimal(start_ch, false)
+        } else {
+            let result = self.read_octal(false);
+
+            if let Token::Octal(value) = result {
+                Token::LegacyOctal(value)
+            } else {
+                Token::Invalid
+            }
+        }
     }
 }
 
@@ -575,6 +624,10 @@ as async from get meta of set target
 0b10101 0b10_11 0B10101 0B10_11
 0o1234 0o5_67 0O12_34 0O567
 0x456F3d 0x09abcF 0X45_6F3d 0x09ab_cF
+01236745
+089234.6
+078
+087e2
 ";
 
         let mut lexer = Lexer::new(input);
@@ -722,6 +775,10 @@ as async from get meta of set target
             Token::Hex(633807),
             Token::Hex(4550461),
             Token::Hex(633807),
+            Token::LegacyOctal(343525),
+            Token::Decimal(89234.6),
+            Token::Decimal(78.0),
+            Token::Decimal(8700.0),
             Token::Eof,
         ];
 

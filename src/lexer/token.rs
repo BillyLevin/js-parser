@@ -142,4 +142,5 @@ pub enum Token {
     Binary(u64),
     Octal(u64),
     Hex(u64),
+    LegacyOctal(u64),
 }
