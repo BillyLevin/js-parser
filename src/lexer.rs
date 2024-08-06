@@ -1,13 +1,9 @@
 mod token;
 
-use std::str::Chars;
-
 use self::token::Token;
 
 pub struct Lexer<'a> {
     input: &'a str,
-    chars: Chars<'a>,
-
     current_position: usize,
 }
 
@@ -15,7 +11,6 @@ impl<'a> Lexer<'a> {
     pub fn new(source_code: &'a str) -> Self {
         Self {
             input: source_code,
-            chars: source_code.chars(),
             current_position: 0,
         }
     }
@@ -271,12 +266,20 @@ impl<'a> Lexer<'a> {
     }
 
     fn next_char(&mut self) -> Option<char> {
-        self.current_position += 1;
-        self.chars.next()
+        if self.current_position >= self.input.len() {
+            None
+        } else {
+            self.current_position += 1;
+            Some(self.input.as_bytes()[self.current_position - 1] as char)
+        }
     }
 
     fn peek_char(&self) -> Option<char> {
-        self.chars.clone().next()
+        if self.current_position >= self.input.len() {
+            None
+        } else {
+            Some(self.input.as_bytes()[self.current_position] as char)
+        }
     }
 
     fn skip_whitespace(&mut self) {
@@ -292,7 +295,7 @@ impl<'a> Lexer<'a> {
         let mut identifier_name = String::new();
         identifier_name.push(start_char);
 
-        for ch in self.chars.by_ref() {
+        while let Some(ch) = self.next_char() {
             // TODO: allow unicode continue per spec https://tc39.es/ecma262/#prod-IdentifierPartChar
             if matches!(ch, 'a'..='z' | 'A'..='Z' | '$' | '_') {
                 identifier_name.push(ch);
@@ -591,15 +594,17 @@ impl<'a> Lexer<'a> {
     fn read_legacy_octal_or_decimal(&mut self) -> Token {
         let mut is_decimal = false;
 
-        let cloned = self.chars.clone();
+        let start_position = self.current_position;
 
-        for ch in cloned {
+        while let Some(ch) = self.next_char() {
             match ch {
                 '0'..='7' => (),
                 '8' | '9' => is_decimal = true,
                 _ => break,
             };
         }
+
+        self.current_position = start_position;
 
         if is_decimal {
             let start_ch = self.next_char().unwrap();
