@@ -1,4 +1,5 @@
 mod token;
+mod whitespace;
 
 use self::token::Token;
 
