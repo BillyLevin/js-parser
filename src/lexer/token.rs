@@ -1,3 +1,5 @@
+use super::RegularExpressionFlags;
+
 #[derive(Debug, PartialEq)]
 pub enum Token {
     Invalid,
@@ -143,4 +145,10 @@ pub enum Token {
     Octal(u64),
     Hex(u64),
     LegacyOctal(u64),
+
+    // regular expression literals https://tc39.es/ecma262/#sec-literals-regular-expression-literals
+    RegularExpression {
+        body: String,
+        flags: RegularExpressionFlags,
+    },
 }

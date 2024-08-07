@@ -1,6 +1,8 @@
 mod token;
 mod whitespace;
 
+use crate::lexer::whitespace::is_line_terminator;
+
 use self::token::Token;
 
 pub struct Lexer<'a> {
@@ -298,7 +300,7 @@ impl<'a> Lexer<'a> {
 
         while let Some(ch) = self.next_char() {
             // TODO: allow unicode continue per spec https://tc39.es/ecma262/#prod-IdentifierPartChar
-            if matches!(ch, 'a'..='z' | 'A'..='Z' | '$' | '_') {
+            if matches!(ch, 'a'..='z' | 'A'..='Z' | '$' | '_' | '0'..='9') {
                 identifier_name.push(ch);
             } else {
                 break;
@@ -665,6 +667,127 @@ impl<'a> Lexer<'a> {
             Err(_) => Token::Invalid,
         }
     }
+
+    fn read_regex(&mut self, current_token: Token) -> Token {
+        // the start token already gets read, so we need to backtrack to the beginning of
+        // the regular expression
+        let start_offset = match current_token {
+            Token::Division => 1,
+            Token::DivisionEqual => 2,
+            _ => unreachable!(),
+        };
+
+        self.current_position -= start_offset;
+        debug_assert!(self.current_position > 0);
+
+        let mut body = String::new();
+
+        let mut is_escaping = false;
+
+        loop {
+            match self.next_char() {
+                Some(ch) => {
+                    if is_line_terminator(ch) {
+                        return Token::Invalid;
+                    }
+
+                    if is_escaping {
+                        is_escaping = false;
+                        dbg!(ch);
+                        body.push(ch);
+                    } else if ch == '/' {
+                        break;
+                    } else if ch == '\\' {
+                        is_escaping = true;
+                        body.push(ch);
+                    } else {
+                        body.push(ch);
+                    }
+                }
+                None => return Token::Invalid,
+            };
+        }
+
+        let mut flags = RegularExpressionFlags::default();
+
+        while let Some(ch) = self.peek_char() {
+            // TODO: allow unicode continue per spec https://tc39.es/ecma262/#prod-IdentifierPartChar
+            if !matches!(ch, 'a'..='z' | 'A'..='Z' | '$' | '_' | '0'..='9') {
+                break;
+            }
+
+            self.next_char();
+
+            if let Ok(flag) = RegularExpressionFlag::try_from(ch) {
+                flags.add_flag(flag);
+            } else {
+                break;
+            }
+        }
+
+        Token::RegularExpression { body, flags }
+    }
+}
+
+/// each possible regex flag, see item 5 in this section:
+/// https://tc39.es/ecma262/#sec-regexpinitialize
+#[derive(Debug)]
+enum RegularExpressionFlag {
+    /// HasIndices
+    D = 0b00000001,
+    /// Global
+    G = 0b00000010,
+    /// IgnoreCase
+    I = 0b00000100,
+    /// Multiline
+    M = 0b00001000,
+    /// DotAll
+    S = 0b00010000,
+    /// Unicode
+    U = 0b00100000,
+    /// UnicodeSets
+    V = 0b01000000,
+    /// Sticky
+    Y = 0b10000000,
+}
+
+impl TryFrom<char> for RegularExpressionFlag {
+    type Error = String;
+
+    fn try_from(ch: char) -> Result<Self, Self::Error> {
+        match ch {
+            'd' => Ok(Self::D),
+            'g' => Ok(Self::G),
+            'i' => Ok(Self::I),
+            'm' => Ok(Self::M),
+            's' => Ok(Self::S),
+            'u' => Ok(Self::U),
+            'v' => Ok(Self::V),
+            'y' => Ok(Self::Y),
+            _ => Err(format!("{ch} is not a valid regular expression flag")),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+struct RegularExpressionFlags {
+    value: u8,
+}
+
+impl RegularExpressionFlags {
+    fn default() -> Self {
+        Self { value: 0 }
+    }
+
+    fn add_flag(&mut self, flag: RegularExpressionFlag) {
+        self.value |= flag as u8;
+    }
+}
+
+impl PartialEq<u8> for RegularExpressionFlags {
+    fn eq(&self, other: &u8) -> bool {
+        self.value == *other
+    }
 }
 
 #[cfg(test)]
@@ -911,6 +1034,30 @@ var { ]
 
         for token in expected {
             assert_eq!(token, lexer.next_token());
+        }
+    }
+
+    #[test]
+    fn test_read_regex() {
+        // we only know to tokenise a regex based on context in the parser, so we're testing the
+        // regex functionality separately from the main test
+        let input = "/this\\/[0-9]+is(a.*)\\[regex$/gi";
+
+        let mut lexer = Lexer::new(input);
+
+        let original_token = lexer.next_token();
+
+        assert_eq!(original_token, Token::Division);
+        let regex_token = lexer.read_regex(original_token);
+
+        if let Token::RegularExpression { body, flags } = regex_token {
+            assert_eq!(body, "this\\/[0-9]+is(a.*)\\[regex$".to_string());
+            assert_eq!(
+                flags,
+                RegularExpressionFlag::G as u8 | RegularExpressionFlag::I as u8
+            );
+        } else {
+            panic!("Expected `RegularExpression` token");
         }
     }
 }
