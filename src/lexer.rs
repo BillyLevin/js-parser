@@ -683,6 +683,7 @@ impl<'a> Lexer<'a> {
         let mut body = String::new();
 
         let mut is_escaping = false;
+        let mut is_in_class = false;
 
         loop {
             match self.next_char() {
@@ -693,16 +694,24 @@ impl<'a> Lexer<'a> {
 
                     if is_escaping {
                         is_escaping = false;
-                        dbg!(ch);
                         body.push(ch);
-                    } else if ch == '/' {
-                        break;
-                    } else if ch == '\\' {
-                        is_escaping = true;
-                        body.push(ch);
-                    } else {
-                        body.push(ch);
+                        continue;
                     }
+
+                    // unescaped forward slash is allowed in regex class, for example `/[hel/lo]/`
+                    // is a valid regular expression in JS
+                    if ch == '/' && !is_in_class {
+                        break;
+                    }
+
+                    body.push(ch);
+
+                    match ch {
+                        '\\' => is_escaping = true,
+                        '[' => is_in_class = true,
+                        ']' => is_in_class = false,
+                        _ => (),
+                    };
                 }
                 None => return Token::Invalid,
             };
@@ -1041,7 +1050,7 @@ var { ]
     fn test_read_regex() {
         // we only know to tokenise a regex based on context in the parser, so we're testing the
         // regex functionality separately from the main test
-        let input = "/this\\/[0-9]+is(a.*)\\[regex$/gi";
+        let input = "/this\\/[0-9]+is(a.*)[/test\\]]\\[regex$/gid";
 
         let mut lexer = Lexer::new(input);
 
@@ -1051,10 +1060,12 @@ var { ]
         let regex_token = lexer.read_regex(original_token);
 
         if let Token::RegularExpression { body, flags } = regex_token {
-            assert_eq!(body, "this\\/[0-9]+is(a.*)\\[regex$".to_string());
+            assert_eq!(body, "this\\/[0-9]+is(a.*)[/test\\]]\\[regex$".to_string());
             assert_eq!(
                 flags,
-                RegularExpressionFlag::G as u8 | RegularExpressionFlag::I as u8
+                RegularExpressionFlag::G as u8
+                    | RegularExpressionFlag::I as u8
+                    | RegularExpressionFlag::D as u8
             );
         } else {
             panic!("Expected `RegularExpression` token");
