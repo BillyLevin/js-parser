@@ -3,7 +3,10 @@ mod whitespace;
 
 use crate::lexer::whitespace::is_line_terminator;
 
-use self::token::Token;
+use self::{
+    token::Token,
+    whitespace::{CR, FF, LF, TAB, VT},
+};
 
 pub struct Lexer<'a> {
     input: &'a str,
@@ -426,26 +429,52 @@ impl<'a> Lexer<'a> {
         let mut string_literal = String::new();
 
         while let Some(ch) = self.next_char() {
+            if is_line_terminator(ch) {
+                return Token::Invalid;
+            }
+
             match ch {
-                '\'' => break,
+                '\'' => return Token::String(string_literal),
+                '\\' => {
+                    let escape_sequence = match self.read_escape_sequence() {
+                        Ok(s) => s,
+                        Err(_) => todo!(),
+                    };
+
+                    string_literal.push_str(&escape_sequence);
+                }
                 _ => string_literal.push(ch),
             };
         }
 
-        Token::String(string_literal)
+        // string was never closed
+        Token::Invalid
     }
 
     fn read_double_quote_string(&mut self) -> Token {
         let mut string_literal = String::new();
 
         while let Some(ch) = self.next_char() {
+            if is_line_terminator(ch) {
+                return Token::Invalid;
+            }
+
             match ch {
-                '"' => break,
+                '"' => return Token::String(string_literal),
+                '\\' => {
+                    let escape_sequence = match self.read_escape_sequence() {
+                        Ok(s) => s,
+                        Err(_) => todo!(),
+                    };
+
+                    string_literal.push_str(&escape_sequence);
+                }
                 _ => string_literal.push(ch),
             };
         }
 
-        Token::String(string_literal)
+        // string was never closed
+        Token::Invalid
     }
 
     fn read_decimal(&mut self, start_char: char, underscores_allowed: bool) -> Token {
@@ -735,6 +764,242 @@ impl<'a> Lexer<'a> {
         }
 
         Token::RegularExpression { body, flags }
+    }
+
+    /// https://tc39.es/ecma262/#prod-EscapeSequence
+    fn read_escape_sequence(&mut self) -> Result<String, ()> {
+        let mut escape_sequence = String::new();
+
+        match self.next_char() {
+            Some(ch) => match ch {
+                // https://tc39.es/ecma262/#table-string-single-character-escape-sequences
+                '\'' => {
+                    escape_sequence.push('\'');
+                }
+                '"' => {
+                    escape_sequence.push('"');
+                }
+                '\\' => {
+                    escape_sequence.push('\\');
+                }
+                'b' => {
+                    // backspace (see table at above link)
+                    escape_sequence.push('\u{0008}');
+                }
+                'f' => {
+                    escape_sequence.push(FF);
+                }
+                'n' => {
+                    escape_sequence.push(LF);
+                }
+                'r' => {
+                    escape_sequence.push(CR);
+                }
+                't' => {
+                    escape_sequence.push(TAB);
+                }
+                'v' => {
+                    escape_sequence.push(VT);
+                }
+                // TODO: there is probably a less weird syntax for writing this, but don't want to
+                // match on '0' directly because other productions also begin with '0'
+                // 0 [lookahead ∉ DecimalDigit]
+                '0' if !matches!(self.peek_char(), Some(lookahead) if lookahead.is_ascii_digit()) => {
+                    escape_sequence.push('\0')
+                }
+                '0'..='7' => {
+                    let mut sequence_string = String::from(ch);
+
+                    match ch {
+                        // ZeroToThree OctalDigit [lookahead ∉ OctalDigit]
+                        // ZeroToThree OctalDigit OctalDigit
+                        '0'..='3' => {
+                            if let Some(next_ch @ '0'..='7') = self.peek_char() {
+                                sequence_string.push(next_ch);
+                                self.next_char();
+
+                                if let Some(lookahead @ '0'..='7') = self.peek_char() {
+                                    sequence_string.push(lookahead);
+                                    self.next_char();
+                                }
+                            }
+                        }
+                        // FourToSeven OctalDigit
+                        '4'..='7' => {
+                            if let Some(next_ch @ '0'..='7') = self.peek_char() {
+                                sequence_string.push(next_ch);
+                                self.next_char();
+                            }
+                        }
+                        _ => unreachable!(),
+                    }
+
+                    let sequence_u32 = u32::from_str_radix(&sequence_string, 8)
+                        .expect("implementation must be incorrect");
+                    let escape_char =
+                        char::try_from(sequence_u32).expect("implementation must be incorrect");
+                    escape_sequence.push(escape_char);
+                }
+
+                // https://tc39.es/ecma262/#prod-HexEscapeSequence
+                // x HexDigit HexDigit
+                'x' => {
+                    let mut sequence_string = String::new();
+
+                    match self.next_char() {
+                        Some(next_ch @ ('0'..='9' | 'a'..='f' | 'A'..='F')) => {
+                            sequence_string.push(next_ch);
+
+                            match self.next_char() {
+                                Some(next_next_ch @ ('0'..='9' | 'a'..='f' | 'A'..='F')) => {
+                                    sequence_string.push(next_next_ch);
+                                }
+                                _ => return Err(()),
+                            }
+                        }
+                        _ => return Err(()),
+                    }
+
+                    let sequence_u32 = u32::from_str_radix(&sequence_string, 16)
+                        .expect("implementation must be incorrect");
+                    let escape_char =
+                        char::try_from(sequence_u32).expect("implementation must be incorrect");
+                    escape_sequence.push(escape_char);
+                }
+                // https://tc39.es/ecma262/#prod-UnicodeEscapeSequence
+                // u Hex4Digits
+                // u{ CodePoint }
+                'u' => match self.next_char() {
+                    Some('{') => {
+                        // CodePoint ::
+                        //   HexDigits[~Sep] but only if the MV of HexDigits ≤ 0x10FFFF
+                        let start_char = match self.peek_char() {
+                            Some(c @ ('0'..='9' | 'a'..='f' | 'A'..='F')) => c,
+                            _ => return Err(()),
+                        };
+
+                        self.next_char();
+
+                        let mut hex_string = String::from(start_char);
+
+                        while let Some(next_ch) = self.peek_char() {
+                            if matches!(next_ch, '0'..='9' | 'a'..='f' | 'A'..='F') {
+                                // TODO: need to do the `> 0x10FFFF` check somewhere, maybe in the
+                                // parser? depends if it makes sense to still treat it as a
+                                // `Token::String` or if it should be `Token::Invalid`
+                                self.next_char();
+                                hex_string.push(next_ch);
+                            } else {
+                                break;
+                            }
+                        }
+
+                        if self.peek_char() != Some('}') {
+                            return Err(());
+                        }
+
+                        self.next_char();
+
+                        let sequence_u32 = u32::from_str_radix(&hex_string, 16)
+                            .expect("implementation must be incorrect");
+
+                        let escape_char = match char::try_from(sequence_u32) {
+                            Ok(ch) => ch,
+                            Err(_) => {
+                                escape_sequence.push('\\');
+                                escape_sequence.push('u');
+                                escape_sequence.push_str(&hex_string);
+                                return Ok(escape_sequence);
+                            }
+                        };
+
+                        escape_sequence.push(escape_char);
+                    }
+                    Some(next_ch @ ('0'..='9' | 'a'..='f' | 'A'..='F')) => {
+                        let mut sequence_string = String::new();
+                        sequence_string.push(next_ch);
+
+                        for _ in 0..3 {
+                            if let Some(c @ ('0'..='9' | 'a'..='f' | 'A'..='F')) = self.next_char()
+                            {
+                                sequence_string.push(c);
+                            } else {
+                                return Err(());
+                            }
+                        }
+
+                        let sequence_u32 = u32::from_str_radix(&sequence_string, 16)
+                            .expect("implementation must be incorrect");
+
+                        // https://tc39.es/ecma262/#surrogate-pair
+                        let is_leading_surrogate = (0xD800..=0xDBFF).contains(&sequence_u32);
+
+                        if is_leading_surrogate {
+                            let mut is_surrogate_pair = false;
+
+                            if self.peek_char() == Some('\\') {
+                                self.next_char();
+
+                                if self.peek_char() == Some('u') {
+                                    self.next_char();
+                                    is_surrogate_pair = true;
+                                } else {
+                                    self.current_position -= 1;
+                                }
+                            }
+
+                            if is_surrogate_pair {
+                                let mut trailing_surrogate = String::new();
+
+                                for _ in 0..4 {
+                                    if let Some(c @ ('0'..='9' | 'a'..='f' | 'A'..='F')) =
+                                        self.next_char()
+                                    {
+                                        trailing_surrogate.push(c);
+                                    } else {
+                                        return Err(());
+                                    }
+                                }
+
+                                let trailing_surrogate_u32 =
+                                    u32::from_str_radix(&trailing_surrogate, 16)
+                                        .expect("implementation must be incorrect");
+
+                                // valid surrogate pair
+                                if (0xDC00..=0xDFFF).contains(&trailing_surrogate_u32) {
+                                    let surrogate_pair = (sequence_u32 - 0xD800) * 0x400
+                                        + (trailing_surrogate_u32 - 0xDC00)
+                                        + 0x10000;
+
+                                    let surrogate_pair_char = char::try_from(surrogate_pair)
+                                        .expect("implementation must be incorrect");
+                                    escape_sequence.push(surrogate_pair_char);
+                                    return Ok(escape_sequence);
+                                }
+                            }
+                        }
+
+                        let escape_char = match char::try_from(sequence_u32) {
+                            Ok(ch) => ch,
+                            Err(_) => {
+                                escape_sequence.push('\\');
+                                escape_sequence.push('u');
+                                escape_sequence.push_str(&sequence_string);
+                                return Ok(escape_sequence);
+                            }
+                        };
+
+                        escape_sequence.push(escape_char);
+                    }
+                    _ => return Err(()),
+                },
+                _ => escape_sequence.push(ch),
+            },
+
+            None => return Err(()),
+        };
+
+        Ok(escape_sequence)
     }
 }
 
@@ -1069,6 +1334,69 @@ var { ]
             );
         } else {
             panic!("Expected `RegularExpression` token");
+        }
+    }
+
+    #[test]
+    fn test_strings() {
+        let input = "
+            'hello\\n \\' \\\\ \\08'
+            'hi\\8 \\9'
+            'hey\\47 \\48 \\4 \\147'
+            'another \" \\\" 123'
+            'hex \\x8F'
+            'unicode \\u2692'
+            'surrogate pair \\uD83D\\uDE43'
+            'invalid unicode \\uD83D'
+            'codepoint \\u{2692}'
+            'long codepoint \\u{1F976}'
+            'invalid codepoint \\u{D83D}'
+
+            \"hello\\n \\\" \\\\ \\08\"
+            \"hi\\8 \\9\"
+            \"hey\\47 \\48 \\4 \\147\"
+            \"another \' \\' 123\"
+            \"hex \\xc4\"
+            \"unicode \\u265e\"
+            \"surrogate pair \\uD83D\\uDE1C\"
+            \"invalid unicode \\udE1c\"
+            \"codepoint \\u{265e}\"
+            \"long codepoint \\u{1f921}\"
+            \"invalid codepoint \\u{dE1c}\"
+            ";
+
+        let mut lexer = Lexer::new(input);
+
+        let expected: Vec<Token> = vec![
+            // single quotes
+            Token::String("hello\n ' \\ \08".to_string()),
+            Token::String("hi8 9".to_string()),
+            Token::String("hey\u{27} \u{4}8 \u{4} \u{67}".to_string()),
+            Token::String("another \" \" 123".to_string()),
+            Token::String("hex \u{8f}".to_string()),
+            Token::String("unicode ⚒".to_string()),
+            Token::String("surrogate pair 🙃".to_string()),
+            Token::String("invalid unicode \\uD83D".to_string()),
+            Token::String("codepoint ⚒".to_string()),
+            Token::String("long codepoint 🥶".to_string()),
+            Token::String("invalid codepoint \\uD83D".to_string()),
+            // double quotes
+            Token::String("hello\n \" \\ \08".to_string()),
+            Token::String("hi8 9".to_string()),
+            Token::String("hey\u{27} \u{4}8 \u{4} \u{67}".to_string()),
+            Token::String("another ' ' 123".to_string()),
+            Token::String("hex \u{c4}".to_string()),
+            Token::String("unicode ♞".to_string()),
+            Token::String("surrogate pair 😜".to_string()),
+            Token::String("invalid unicode \\udE1c".to_string()),
+            Token::String("codepoint ♞".to_string()),
+            Token::String("long codepoint 🤡".to_string()),
+            Token::String("invalid codepoint \\udE1c".to_string()),
+            Token::Eof,
+        ];
+
+        for token in expected {
+            assert_eq!(token, lexer.next_token());
         }
     }
 }

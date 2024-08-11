@@ -24,7 +24,7 @@ pub fn is_spec_whitespace(ch: char) -> bool {
         || ch == ZWNBSP
         || ch == SPACE
         || ch == NBSP
-        || ch == '\u{01680}'
+        || ch == '\u{1680}'
         || ch == '\u{2000}'
         || ch == '\u{2001}'
         || ch == '\u{2002}'
