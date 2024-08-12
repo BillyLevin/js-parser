@@ -438,7 +438,7 @@ impl<'a> Lexer<'a> {
                 '\\' => {
                     let escape_sequence = match self.read_escape_sequence() {
                         Ok(s) => s,
-                        Err(_) => todo!(),
+                        Err(_) => return Token::Invalid,
                     };
 
                     string_literal.push_str(&escape_sequence);
@@ -464,7 +464,7 @@ impl<'a> Lexer<'a> {
                 '\\' => {
                     let escape_sequence = match self.read_escape_sequence() {
                         Ok(s) => s,
-                        Err(_) => todo!(),
+                        Err(_) => return Token::Invalid,
                     };
 
                     string_literal.push_str(&escape_sequence);
