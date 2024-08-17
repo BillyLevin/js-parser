@@ -151,4 +151,7 @@ pub enum Token {
         body: String,
         flags: RegularExpressionFlags,
     },
+
+    // template literals https://tc39.es/ecma262/#sec-template-literal-lexical-components
+    TemplateNoSubstitution(String),
 }

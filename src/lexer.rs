@@ -260,6 +260,7 @@ impl<'a> Lexer<'a> {
                 '"' => return self.read_double_quote_string(),
                 '1'..='9' => return self.read_decimal(ch, true),
                 '0' => return self.read_number_starting_with_zero(),
+                '`' => return self.read_template(),
                 _ => Token::Eof,
             };
 
@@ -1001,6 +1002,34 @@ impl<'a> Lexer<'a> {
 
         Ok(escape_sequence)
     }
+
+    fn read_template(&mut self) -> Token {
+        let mut template_literal = String::new();
+
+        while let Some(ch) = self.next_char() {
+            match ch {
+                '`' => break,
+                '\\' => {
+                    let escape_sequence = match self.read_escape_sequence() {
+                        Ok(sequence) => sequence,
+                        Err(_) => return Token::Invalid,
+                    };
+
+                    template_literal.push_str(&escape_sequence);
+                }
+                '$' => {
+                    if self.peek_char() == Some('{') {
+                        todo!("templates with substitutions are a lot more complex, will handle them separately (maybe in the parser like with regex)");
+                    } else {
+                        template_literal.push('$');
+                    }
+                }
+                _ => template_literal.push(ch),
+            };
+        }
+
+        Token::TemplateNoSubstitution(template_literal)
+    }
 }
 
 /// each possible regex flag, see item 5 in this section:
@@ -1092,6 +1121,10 @@ as async from get meta of set target
 0
 0.34
 0.2_3e+2
+`plain template with no substitutions`
+`multiline template
+with no substitutions`
+`escaped template with no substitutions \\u2692`
 ";
 
         let mut lexer = Lexer::new(input);
@@ -1246,6 +1279,9 @@ as async from get meta of set target
             Token::Decimal(0.0),
             Token::Decimal(0.34),
             Token::Decimal(23.0),
+            Token::TemplateNoSubstitution("plain template with no substitutions".to_string()),
+            Token::TemplateNoSubstitution("multiline template\nwith no substitutions".to_string()),
+            Token::TemplateNoSubstitution("escaped template with no substitutions ⚒".to_string()),
             Token::Eof,
         ];
 
