@@ -10,21 +10,21 @@ use self::{
 
 pub struct Lexer<'a> {
     input: &'a str,
-    current_position: usize,
+    read_position: usize,
 }
 
 impl<'a> Lexer<'a> {
     pub fn new(source_code: &'a str) -> Self {
         Self {
             input: source_code,
-            current_position: 0,
+            read_position: 1,
         }
     }
 
     fn next_token(&mut self) -> Token {
         self.skip_whitespace();
 
-        if let Some(ch) = self.next_char() {
+        if let Some(ch) = self.current_char() {
             let token = match ch {
                 '{' => Token::LeftBrace,
                 '}' => Token::RightBrace,
@@ -77,7 +77,10 @@ impl<'a> Lexer<'a> {
                                 self.next_char();
 
                                 match self.peek_char() {
-                                    Some('=') => Token::UnsignedRightShiftEqual,
+                                    Some('=') => {
+                                        self.next_char();
+                                        Token::UnsignedRightShiftEqual
+                                    }
                                     _ => Token::UnsignedRightShift,
                                 }
                             }
@@ -248,9 +251,11 @@ impl<'a> Lexer<'a> {
                 'a'..='z' | 'A'..='Z' | '$' | '_' => return self.read_identifier(ch),
                 '#' => match self.peek_char() {
                     Some('!') => {
-                        if self.current_position == 1 {
+                        if self.read_position == 1 {
+                            self.next_char();
                             self.read_hashbang_comment()
                         } else {
+                            self.next_char();
                             Token::Invalid
                         }
                     }
@@ -273,25 +278,33 @@ impl<'a> Lexer<'a> {
     }
 
     fn next_char(&mut self) -> Option<char> {
-        if self.current_position >= self.input.len() {
+        if self.read_position >= self.input.len() {
             None
         } else {
-            self.current_position += 1;
-            Some(self.input.as_bytes()[self.current_position - 1] as char)
+            self.read_position += 1;
+            Some(self.input.as_bytes()[self.read_position - 1] as char)
         }
     }
 
     fn peek_char(&self) -> Option<char> {
-        if self.current_position >= self.input.len() {
+        if self.read_position >= self.input.len() {
             None
         } else {
-            Some(self.input.as_bytes()[self.current_position] as char)
+            Some(self.input.as_bytes()[self.read_position] as char)
+        }
+    }
+
+    fn current_char(&self) -> Option<char> {
+        if self.read_position >= self.input.len() {
+            None
+        } else {
+            Some(self.input.as_bytes()[self.read_position - 1] as char)
         }
     }
 
     fn skip_whitespace(&mut self) {
         // TODO: this is probably not spec-compliant with all the unicode stuff, will fix later
-        while let Some(' ' | '\t' | '\n' | '\r') = self.peek_char() {
+        while let Some(' ' | '\t' | '\n' | '\r') = self.current_char() {
             self.next_char();
         }
     }
@@ -400,7 +413,7 @@ impl<'a> Lexer<'a> {
     }
 
     fn read_single_line_comment(&mut self) -> Token {
-        while let Some(ch) = self.peek_char() {
+        while let Some(ch) = self.current_char() {
             if ch == '\n' || ch == '\r' {
                 break;
             }
@@ -412,11 +425,11 @@ impl<'a> Lexer<'a> {
     }
 
     fn read_multi_line_comment(&mut self) -> Token {
-        while let Some(ch) = self.peek_char() {
+        while let Some(ch) = self.current_char() {
             self.next_char();
 
             if ch == '*' {
-                if let Some('/') = self.peek_char() {
+                if let Some('/') = self.current_char() {
                     self.next_char();
                     break;
                 }
@@ -435,7 +448,10 @@ impl<'a> Lexer<'a> {
             }
 
             match ch {
-                '\'' => return Token::String(string_literal),
+                '\'' => {
+                    self.next_char();
+                    return Token::String(string_literal);
+                }
                 '\\' => {
                     let escape_sequence = match self.read_escape_sequence() {
                         Ok(s) => s,
@@ -461,7 +477,10 @@ impl<'a> Lexer<'a> {
             }
 
             match ch {
-                '"' => return Token::String(string_literal),
+                '"' => {
+                    self.next_char();
+                    return Token::String(string_literal);
+                }
                 '\\' => {
                     let escape_sequence = match self.read_escape_sequence() {
                         Ok(s) => s,
@@ -542,7 +561,9 @@ impl<'a> Lexer<'a> {
     }
 
     fn read_number_starting_with_zero(&mut self) -> Token {
-        match self.peek_char() {
+        self.next_char();
+
+        match self.current_char() {
             Some('b' | 'B') => {
                 self.next_char();
                 self.read_binary()
@@ -576,7 +597,9 @@ impl<'a> Lexer<'a> {
     fn read_binary(&mut self) -> Token {
         let mut numeric_value = 0u64;
 
-        while let Some(ch) = self.next_char() {
+        while let Some(ch) = self.current_char() {
+            self.next_char();
+
             match ch {
                 '0' => numeric_value *= 2,
                 '1' => numeric_value = numeric_value * 2 + 1,
@@ -591,7 +614,9 @@ impl<'a> Lexer<'a> {
     fn read_octal(&mut self, underscores_allowed: bool) -> Token {
         let mut numeric_value = 0u64;
 
-        while let Some(ch) = self.next_char() {
+        while let Some(ch) = self.current_char() {
+            self.next_char();
+
             match ch {
                 '0'..='7' => numeric_value = numeric_value * 8 + (ch.to_digit(10).unwrap() as u64),
                 '_' => {
@@ -611,7 +636,9 @@ impl<'a> Lexer<'a> {
     fn read_hex(&mut self) -> Token {
         let mut numeric_value = 0u64;
 
-        while let Some(ch) = self.next_char() {
+        while let Some(ch) = self.current_char() {
+            self.next_char();
+
             match ch {
                 '0'..='9' => numeric_value = numeric_value * 16 + (ch.to_digit(10).unwrap() as u64),
                 'a'..='f' => numeric_value = numeric_value * 16 + (ch as u64 - 'a' as u64 + 10),
@@ -627,9 +654,11 @@ impl<'a> Lexer<'a> {
     fn read_legacy_octal_or_decimal(&mut self) -> Token {
         let mut is_decimal = false;
 
-        let start_position = self.current_position;
+        let start_position = self.read_position;
 
-        while let Some(ch) = self.next_char() {
+        while let Some(ch) = self.current_char() {
+            self.next_char();
+
             match ch {
                 '0'..='7' => (),
                 '8' | '9' => is_decimal = true,
@@ -637,10 +666,10 @@ impl<'a> Lexer<'a> {
             };
         }
 
-        self.current_position = start_position;
+        self.read_position = start_position;
 
         if is_decimal {
-            let start_ch = self.next_char().unwrap();
+            let start_ch = self.current_char().unwrap();
             self.read_decimal(start_ch, false)
         } else {
             let result = self.read_octal(false);
@@ -657,7 +686,9 @@ impl<'a> Lexer<'a> {
         let mut has_exponent = false;
         let mut number_literal = String::from("0.");
 
-        while let Some(ch) = self.next_char() {
+        while let Some(ch) = self.current_char() {
+            self.next_char();
+
             match ch {
                 '0'..='9' => number_literal.push(ch),
                 'e' | 'E' => {
@@ -707,8 +738,8 @@ impl<'a> Lexer<'a> {
             _ => unreachable!(),
         };
 
-        self.current_position -= start_offset;
-        debug_assert!(self.current_position > 0);
+        self.read_position -= start_offset;
+        debug_assert!(self.read_position > 0);
 
         let mut body = String::new();
 
@@ -945,7 +976,7 @@ impl<'a> Lexer<'a> {
                                     self.next_char();
                                     is_surrogate_pair = true;
                                 } else {
-                                    self.current_position -= 1;
+                                    self.read_position -= 1;
                                 }
                             }
 
@@ -1028,6 +1059,8 @@ impl<'a> Lexer<'a> {
             };
         }
 
+        self.next_char();
+
         Token::TemplateNoSubstitution(template_literal)
     }
 }
@@ -1100,7 +1133,7 @@ mod tests {
     #[test]
     fn test_next_token() {
         let input =
-            "{ } ( ) [ ] . ... ; , < > <= >= = == ! != === !== + - * / % ** ++ -- << >> >>> / % & | ^ ~ ? : && || ?? += -= *= /= %= => **= <<= >>= >>>= &= |= ^= &&= ||= ??= await break case catch class const continue debugger default delete do else enum export extends false finally for function if import in instanceof new null return super switch this throw true try typeof var void while with yield hello #thisisprivate hi // single line comment *
+            "{} () [ ] . ... ; , < > <= >= = == ! != === !== + - * / % ** ++ -- << >> >>> / % & | ^ ~ ? : && || ?? += -= *= /= %= => **= <<= >>= >>>= &= |= ^= &&= ||= ??= await break case catch class const continue debugger default delete do else enum export extends false finally for function if import in instanceof new null return super switch this throw true try typeof var void while with yield hello #thisisprivate hi // single line comment *
 var
 /*
 hello
