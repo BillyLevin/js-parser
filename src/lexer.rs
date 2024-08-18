@@ -1035,12 +1035,17 @@ impl<'a> Lexer<'a> {
     }
 
     fn read_template(&mut self) -> Token {
+        self.next_char();
+
         let mut template_literal = String::new();
 
-        while let Some(ch) = self.next_char() {
-            match ch {
-                '`' => break,
-                '\\' => {
+        loop {
+            match self.current_char() {
+                Some('`') => {
+                    self.next_char();
+                    break;
+                }
+                Some('\\') => {
                     let escape_sequence = match self.read_escape_sequence() {
                         Ok(sequence) => sequence,
                         Err(_) => return Token::Invalid,
@@ -1048,18 +1053,25 @@ impl<'a> Lexer<'a> {
 
                     template_literal.push_str(&escape_sequence);
                 }
-                '$' => {
+                Some('$') => {
                     if self.peek_char() == Some('{') {
-                        todo!("templates with substitutions are a lot more complex, will handle them separately (maybe in the parser like with regex)");
+                        self.next_char();
+                        self.next_char();
+                        return Token::TemplateHead(template_literal);
                     } else {
                         template_literal.push('$');
                     }
                 }
-                _ => template_literal.push(ch),
-            };
-        }
+                Some(ch) => template_literal.push(ch),
 
-        self.next_char();
+                // unterminated template. this can also occur in the initial tokenisation if the
+                // template has a substitution. should be fixed during the re-tokenisation of the
+                // template
+                None => return Token::Invalid,
+            }
+
+            self.next_char();
+        }
 
         Token::TemplateNoSubstitution(template_literal)
     }
@@ -1133,7 +1145,7 @@ mod tests {
     #[test]
     fn test_next_token() {
         let input =
-            "{} () [ ] . ... ; , < > <= >= = == ! != === !== + - * / % ** ++ -- << >> >>> / % & | ^ ~ ? : && || ?? += -= *= /= %= => **= <<= >>= >>>= &= |= ^= &&= ||= ??= await break case catch class const continue debugger default delete do else enum export extends false finally for function if import in instanceof new null return super switch this throw true try typeof var void while with yield hello #thisisprivate hi // single line comment *
+            "{} ( ) [ ] . ... ; , < > <= >= = == ! != === !== + - * / % ** ++ -- << >> >>> / % & | ^ ~ ? : && || ?? += -= *= /= %= => **= <<= >>= >>>= &= |= ^= &&= ||= ??= await break case catch class const continue debugger default delete do else enum export extends false finally for function if import in instanceof new null return super switch this throw true try typeof var void while with yield hello #thisisprivate hi // single line comment *
 var
 /*
 hello
@@ -1158,6 +1170,7 @@ as async from get meta of set target
 `multiline template
 with no substitutions`
 `escaped template with no substitutions \\u2692`
+`this has ${a_substitution}`
 ";
 
         let mut lexer = Lexer::new(input);
@@ -1315,6 +1328,10 @@ with no substitutions`
             Token::TemplateNoSubstitution("plain template with no substitutions".to_string()),
             Token::TemplateNoSubstitution("multiline template\nwith no substitutions".to_string()),
             Token::TemplateNoSubstitution("escaped template with no substitutions ⚒".to_string()),
+            Token::TemplateHead("this has ".to_string()),
+            Token::Identifier("a_substitution".to_string()),
+            Token::RightBrace,
+            Token::Invalid,
             Token::Eof,
         ];
 
