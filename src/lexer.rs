@@ -1169,7 +1169,7 @@ as async from get meta of set target
 `plain template with no substitutions`
 `multiline template
 with no substitutions`
-`escaped template with no substitutions \\u2692`
+`escaped \\` template with no substitutions \\u2692`
 `this has ${a_substitution}`
 ";
 
@@ -1327,7 +1327,7 @@ with no substitutions`
             Token::Decimal(23.0),
             Token::TemplateNoSubstitution("plain template with no substitutions".to_string()),
             Token::TemplateNoSubstitution("multiline template\nwith no substitutions".to_string()),
-            Token::TemplateNoSubstitution("escaped template with no substitutions ⚒".to_string()),
+            Token::TemplateNoSubstitution("escaped ` template with no substitutions ⚒".to_string()),
             Token::TemplateHead("this has ".to_string()),
             Token::Identifier("a_substitution".to_string()),
             Token::RightBrace,
