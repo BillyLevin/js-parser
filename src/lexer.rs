@@ -11,14 +11,18 @@ use self::{
 pub struct Lexer<'a> {
     input: &'a str,
     read_position: usize,
+    ch: Option<char>,
 }
 
 impl<'a> Lexer<'a> {
     pub fn new(source_code: &'a str) -> Self {
-        Self {
+        let mut lexer = Self {
             input: source_code,
-            read_position: 1,
-        }
+            read_position: 0,
+            ch: None,
+        };
+        lexer.next_char();
+        lexer
     }
 
     fn next_token(&mut self) -> Token {
@@ -279,11 +283,13 @@ impl<'a> Lexer<'a> {
 
     fn next_char(&mut self) -> Option<char> {
         if self.read_position >= self.input.len() {
-            None
+            self.ch = None;
         } else {
+            self.ch = Some(self.input.as_bytes()[self.read_position] as char);
             self.read_position += 1;
-            Some(self.input.as_bytes()[self.read_position - 1] as char)
         }
+
+        self.ch
     }
 
     fn peek_char(&self) -> Option<char> {
@@ -295,11 +301,7 @@ impl<'a> Lexer<'a> {
     }
 
     fn current_char(&self) -> Option<char> {
-        if self.read_position >= self.input.len() {
-            None
-        } else {
-            Some(self.input.as_bytes()[self.read_position - 1] as char)
-        }
+        self.ch
     }
 
     fn skip_whitespace(&mut self) {
@@ -654,7 +656,7 @@ impl<'a> Lexer<'a> {
     fn read_legacy_octal_or_decimal(&mut self) -> Token {
         let mut is_decimal = false;
 
-        let start_position = self.read_position;
+        let start_position = self.read_position - 1;
 
         while let Some(ch) = self.current_char() {
             self.next_char();
@@ -666,7 +668,10 @@ impl<'a> Lexer<'a> {
             };
         }
 
+        // TODO: not great that i have to remember to do this. should probably come up with a nicer
+        // api for next/peek/current char
         self.read_position = start_position;
+        self.next_char();
 
         if is_decimal {
             let start_ch = self.current_char().unwrap();
@@ -1074,6 +1079,57 @@ impl<'a> Lexer<'a> {
         }
 
         Token::TemplateNoSubstitution(template_literal)
+    }
+
+    /// https://tc39.es/ecma262/#prod-TemplateSubstitutionTail
+    /// TemplateSubstitutionTail ::
+    ///     TemplateMiddle
+    ///     TemplateTail
+    fn read_template_substitution_tail(&mut self) -> Token {
+        let mut template_characters = String::new();
+
+        if self.current_char() != Some('}') {
+            return Token::Invalid;
+        }
+
+        self.next_char();
+
+        loop {
+            match self.current_char() {
+                Some('`') => {
+                    self.next_char();
+                    return Token::TemplateTail(template_characters);
+                }
+                Some('\\') => {
+                    let escape_sequence = match self.read_escape_sequence() {
+                        Ok(sequence) => sequence,
+                        Err(_) => return Token::Invalid,
+                    };
+
+                    template_characters.push_str(&escape_sequence);
+                }
+                Some('$') => {
+                    if self.peek_char() == Some('{') {
+                        self.next_char();
+                        self.next_char();
+                        return Token::TemplateMiddle(template_characters);
+                    } else {
+                        template_characters.push('$');
+                    }
+                }
+                Some(ch) => template_characters.push(ch),
+                None => {
+                    // dbg!(self.current_char());
+                    // dbg!(&template_characters);
+                    return Token::Invalid;
+                }
+            }
+
+            dbg!(self.current_char());
+            dbg!(self.peek_char());
+            self.next_char();
+            dbg!(self.current_char());
+        }
     }
 }
 
@@ -1484,5 +1540,43 @@ var { ]
         for token in expected {
             assert_eq!(token, lexer.next_token());
         }
+    }
+
+    #[test]
+    fn test_read_template_substitution_tail() {
+        let input = "`this has ${a_substitution} and an escape \\uD83D\\uDE1C and ${another_substitution + 3} done`";
+
+        let mut lexer = Lexer::new(input);
+
+        assert_eq!(
+            lexer.next_token(),
+            Token::TemplateHead("this has ".to_string())
+        );
+
+        assert_eq!(
+            lexer.next_token(),
+            Token::Identifier("a_substitution".to_string())
+        );
+
+        assert_eq!(
+            lexer.read_template_substitution_tail(),
+            Token::TemplateMiddle(" and an escape 😜 and ".to_string())
+        );
+
+        assert_eq!(
+            lexer.next_token(),
+            Token::Identifier("another_substitution".to_string())
+        );
+
+        assert_eq!(lexer.next_token(), Token::Plus,);
+
+        assert_eq!(lexer.next_token(), Token::Decimal(3.0),);
+
+        assert_eq!(
+            lexer.read_template_substitution_tail(),
+            Token::TemplateTail(" done".to_string())
+        );
+
+        assert_eq!(lexer.next_token(), Token::Eof,);
     }
 }
