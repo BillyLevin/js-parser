@@ -455,7 +455,7 @@ impl<'a> Lexer<'a> {
                     return Token::String(string_literal);
                 }
                 '\\' => {
-                    let escape_sequence = match self.read_escape_sequence() {
+                    let escape_sequence = match self.read_escape_sequence(false) {
                         Ok(s) => s,
                         Err(_) => return Token::Invalid,
                     };
@@ -484,7 +484,7 @@ impl<'a> Lexer<'a> {
                     return Token::String(string_literal);
                 }
                 '\\' => {
-                    let escape_sequence = match self.read_escape_sequence() {
+                    let escape_sequence = match self.read_escape_sequence(false) {
                         Ok(s) => s,
                         Err(_) => return Token::Invalid,
                     };
@@ -803,8 +803,9 @@ impl<'a> Lexer<'a> {
         Token::RegularExpression { body, flags }
     }
 
-    /// https://tc39.es/ecma262/#prod-EscapeSequence
-    fn read_escape_sequence(&mut self) -> Result<String, ()> {
+    /// for strings: https://tc39.es/ecma262/#prod-EscapeSequence
+    /// for templates: https://tc39.es/ecma262/#prod-TemplateEscapeSequence
+    fn read_escape_sequence(&mut self, is_template: bool) -> Result<String, ()> {
         let mut escape_sequence = String::new();
 
         match self.next_char() {
@@ -838,13 +839,14 @@ impl<'a> Lexer<'a> {
                 'v' => {
                     escape_sequence.push(VT);
                 }
-                // TODO: there is probably a less weird syntax for writing this, but don't want to
-                // match on '0' directly because other productions also begin with '0'
                 // 0 [lookahead ∉ DecimalDigit]
                 '0' if !matches!(self.peek_char(), Some(lookahead) if lookahead.is_ascii_digit()) => {
                     escape_sequence.push('\0')
                 }
-                '0'..='7' => {
+                // LegacyOctalEscapeSequence
+                // https://tc39.es/ecma262/#prod-LegacyOctalEscapeSequence
+                // only applies to strings, not templates
+                '0'..='7' if !is_template => {
                     let mut sequence_string = String::from(ch);
 
                     match ch {
@@ -876,6 +878,21 @@ impl<'a> Lexer<'a> {
                     let escape_char =
                         char::try_from(sequence_u32).expect("implementation must be incorrect");
                     escape_sequence.push(escape_char);
+                }
+
+                '0' if is_template
+                    && matches!(self.peek_char(), Some(lookahead) if lookahead.is_ascii_digit()) =>
+                {
+                    escape_sequence.push('\\');
+                    escape_sequence.push('0');
+                }
+
+                // NotEscapeSequence https://tc39.es/ecma262/#prod-NotEscapeSequence
+                // treat the characters as raw rather than try to escape them
+                // not valid in regular template literals - only tagged template literals
+                ch @ '1'..='9' if is_template => {
+                    escape_sequence.push('\\');
+                    escape_sequence.push(ch);
                 }
 
                 // https://tc39.es/ecma262/#prod-HexEscapeSequence
@@ -920,7 +937,7 @@ impl<'a> Lexer<'a> {
                         let mut hex_string = String::from(start_char);
 
                         while let Some(next_ch) = self.peek_char() {
-                            if matches!(next_ch, '0'..='9' | 'a'..='f' | 'A'..='F') {
+                            if next_ch.is_ascii_hexdigit() {
                                 // TODO: need to do the `> 0x10FFFF` check somewhere, maybe in the
                                 // parser? depends if it makes sense to still treat it as a
                                 // `Token::String` or if it should be `Token::Invalid`
@@ -1051,7 +1068,7 @@ impl<'a> Lexer<'a> {
                     break;
                 }
                 Some('\\') => {
-                    let escape_sequence = match self.read_escape_sequence() {
+                    let escape_sequence = match self.read_escape_sequence(true) {
                         Ok(sequence) => sequence,
                         Err(_) => return Token::Invalid,
                     };
@@ -1101,7 +1118,7 @@ impl<'a> Lexer<'a> {
                     return Token::TemplateTail(template_characters);
                 }
                 Some('\\') => {
-                    let escape_sequence = match self.read_escape_sequence() {
+                    let escape_sequence = match self.read_escape_sequence(true) {
                         Ok(sequence) => sequence,
                         Err(_) => return Token::Invalid,
                     };
@@ -1119,16 +1136,11 @@ impl<'a> Lexer<'a> {
                 }
                 Some(ch) => template_characters.push(ch),
                 None => {
-                    // dbg!(self.current_char());
-                    // dbg!(&template_characters);
                     return Token::Invalid;
                 }
             }
 
-            dbg!(self.current_char());
-            dbg!(self.peek_char());
             self.next_char();
-            dbg!(self.current_char());
         }
     }
 }
@@ -1534,6 +1546,44 @@ var { ]
             Token::String("codepoint ♞".to_string()),
             Token::String("long codepoint 🤡".to_string()),
             Token::String("invalid codepoint \\udE1c".to_string()),
+            Token::Eof,
+        ];
+
+        for token in expected {
+            assert_eq!(token, lexer.next_token());
+        }
+    }
+
+    #[test]
+    fn test_template_escapes() {
+        let input = "
+            `hello\\n \\` \\\\ \\08`
+            `hi\\8 \\9`
+            `hey\\47 \\48 \\4 \\147`
+            `another \" \\\" 123`
+            `hex \\x8F`
+            `unicode \\u2692`
+            `surrogate pair \\uD83D\\uDE43`
+            `invalid unicode \\uD83D`
+            `codepoint \\u{2692}`
+            `long codepoint \\u{1F976}`
+            `invalid codepoint \\u{D83D}`
+            ";
+
+        let mut lexer = Lexer::new(input);
+
+        let expected: Vec<Token> = vec![
+            Token::TemplateNoSubstitution("hello\n ` \\ \\08".to_string()),
+            Token::TemplateNoSubstitution("hi\\8 \\9".to_string()),
+            Token::TemplateNoSubstitution("hey\\47 \\48 \\4 \\147".to_string()),
+            Token::TemplateNoSubstitution("another \" \" 123".to_string()),
+            Token::TemplateNoSubstitution("hex \u{8f}".to_string()),
+            Token::TemplateNoSubstitution("unicode ⚒".to_string()),
+            Token::TemplateNoSubstitution("surrogate pair 🙃".to_string()),
+            Token::TemplateNoSubstitution("invalid unicode \\uD83D".to_string()),
+            Token::TemplateNoSubstitution("codepoint ⚒".to_string()),
+            Token::TemplateNoSubstitution("long codepoint 🥶".to_string()),
+            Token::TemplateNoSubstitution("invalid codepoint \\uD83D".to_string()),
             Token::Eof,
         ];
 
