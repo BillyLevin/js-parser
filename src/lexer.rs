@@ -1,4 +1,4 @@
-mod token;
+pub mod token;
 mod whitespace;
 
 use crate::lexer::whitespace::is_line_terminator;
@@ -25,7 +25,7 @@ impl<'src> Lexer<'src> {
         lexer
     }
 
-    fn next_token(&mut self) -> Token {
+    pub fn next_token(&mut self) -> Token {
         self.skip_whitespace();
 
         if let Some(ch) = self.current_char() {
