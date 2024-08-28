@@ -8,14 +8,14 @@ use self::{
     whitespace::{CR, FF, LF, TAB, VT},
 };
 
-pub struct Lexer<'a> {
-    input: &'a str,
+pub struct Lexer<'src> {
+    input: &'src str,
     read_position: usize,
     ch: Option<char>,
 }
 
-impl<'a> Lexer<'a> {
-    pub fn new(source_code: &'a str) -> Self {
+impl<'src> Lexer<'src> {
+    pub fn new(source_code: &'src str) -> Self {
         let mut lexer = Self {
             input: source_code,
             read_position: 0,
