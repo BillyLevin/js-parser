@@ -1,6 +1,8 @@
 pub mod token;
 mod whitespace;
 
+use std::fmt::Display;
+
 use crate::lexer::whitespace::is_line_terminator;
 
 use self::{
@@ -1185,7 +1187,7 @@ impl TryFrom<char> for RegularExpressionFlag {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 struct RegularExpressionFlags {
     value: u8,
 }
@@ -1198,11 +1200,46 @@ impl RegularExpressionFlags {
     fn add_flag(&mut self, flag: RegularExpressionFlag) {
         self.value |= flag as u8;
     }
+
+    fn has_flag(&self, flag: RegularExpressionFlag) -> bool {
+        self.value & (flag as u8) != 0
+    }
 }
 
 impl PartialEq<u8> for RegularExpressionFlags {
     fn eq(&self, other: &u8) -> bool {
         self.value == *other
+    }
+}
+
+impl Display for RegularExpressionFlags {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.has_flag(RegularExpressionFlag::D) {
+            write!(f, "d")?;
+        }
+        if self.has_flag(RegularExpressionFlag::G) {
+            write!(f, "g")?;
+        }
+        if self.has_flag(RegularExpressionFlag::I) {
+            write!(f, "i")?;
+        }
+        if self.has_flag(RegularExpressionFlag::M) {
+            write!(f, "m")?;
+        }
+        if self.has_flag(RegularExpressionFlag::S) {
+            write!(f, "s")?;
+        }
+        if self.has_flag(RegularExpressionFlag::U) {
+            write!(f, "u")?;
+        }
+        if self.has_flag(RegularExpressionFlag::V) {
+            write!(f, "v")?;
+        }
+        if self.has_flag(RegularExpressionFlag::Y) {
+            write!(f, "y")?;
+        }
+
+        Ok(())
     }
 }
 
