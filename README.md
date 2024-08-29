@@ -9,3 +9,4 @@ This is being built for learning purposes only
 - [swc](https://swc.rs/)
 - [Biome](https://biomejs.dev/)
 - [Writing an Interpreter in Go](https://interpreterbook.com/) by Thorsten Ball
+- [ESTree](https://github.com/estree/estree)

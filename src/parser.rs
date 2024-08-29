@@ -29,7 +29,7 @@ impl<'src> Parser<'src> {
     }
 
     fn parse_program(&mut self) -> Program {
-        let mut program: Program = Program::new();
+        let mut program: Program = Program::default();
 
         loop {
             if self.current_token == Token::Eof {
@@ -69,7 +69,10 @@ impl<'src> Parser<'src> {
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::Statement;
+    use crate::ast::{
+        Declaration, Expression, Literal, Pattern, Statement, VariableDeclaration,
+        VariableDeclarationKind, VariableDeclarator,
+    };
 
     use super::*;
 
@@ -91,12 +94,47 @@ mod tests {
         assert_eq!(
             program.body,
             vec![
-                Statement::VariableStatement,
-                Statement::VariableStatement,
-                Statement::VariableStatement,
-                Statement::VariableStatement,
-                Statement::VariableStatement,
-                Statement::VariableStatement
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier,
+                        init: Some(Expression::Literal(Literal::NumberLiteral))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier,
+                        init: Some(Expression::Literal(Literal::StringLiteral))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier,
+                        init: Some(Expression::Literal(Literal::BooleanLiteral))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier,
+                        init: None
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![
+                        VariableDeclarator {
+                            id: Pattern::Identifier,
+                            init: None
+                        },
+                        VariableDeclarator {
+                            id: Pattern::Identifier,
+                            init: None
+                        }
+                    ]
+                })),
             ]
         );
     }
