@@ -143,10 +143,10 @@ pub enum Token {
 
     // numeric literals https://tc39.es/ecma262/#sec-literals-numeric-literals
     Decimal(f64),
-    Binary(u64),
-    Octal(u64),
-    Hex(u64),
-    LegacyOctal(u64),
+    Binary(f64),
+    Octal(f64),
+    Hex(f64),
+    LegacyOctal(f64),
 
     // regular expression literals https://tc39.es/ecma262/#sec-literals-regular-expression-literals
     RegularExpression {
@@ -283,10 +283,10 @@ impl Display for Token {
             Token::Arrow => write!(f, "=>"),
             Token::String(value) => write!(f, "\"{}\"", value),
             Token::Decimal(value) => write!(f, "{}", value),
-            Token::Binary(value) => write!(f, "{:#b}", value),
-            Token::Octal(value) => write!(f, "{:#o}", value),
-            Token::Hex(value) => write!(f, "{:#x}", value),
-            Token::LegacyOctal(value) => write!(f, "{:#o}", value),
+            Token::Binary(value) => write!(f, "{:#b}", *value as u64),
+            Token::Octal(value) => write!(f, "{:#o}", *value as u64),
+            Token::Hex(value) => write!(f, "{:#x}", *value as u64),
+            Token::LegacyOctal(value) => write!(f, "{:#o}", *value as u64),
             Token::RegularExpression { body, flags } => write!(f, "/{}/{}", body, flags),
             Token::TemplateNoSubstitution(value) => write!(f, "`{}`", value),
             Token::TemplateHead(value) => write!(f, "`{}${{", value),

@@ -612,7 +612,7 @@ impl<'src> Lexer<'src> {
             }
         }
 
-        Token::Binary(numeric_value)
+        Token::Binary(numeric_value as f64)
     }
 
     fn read_octal(&mut self, underscores_allowed: bool) -> Token {
@@ -634,7 +634,7 @@ impl<'src> Lexer<'src> {
             };
         }
 
-        Token::Octal(numeric_value)
+        Token::Octal(numeric_value as f64)
     }
 
     fn read_hex(&mut self) -> Token {
@@ -652,7 +652,7 @@ impl<'src> Lexer<'src> {
             };
         }
 
-        Token::Hex(numeric_value)
+        Token::Hex(numeric_value as f64)
     }
 
     fn read_legacy_octal_or_decimal(&mut self) -> Token {
@@ -1187,14 +1187,21 @@ impl TryFrom<char> for RegularExpressionFlag {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-struct RegularExpressionFlags {
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct RegularExpressionFlags {
     value: u8,
 }
 
 impl RegularExpressionFlags {
-    fn default() -> Self {
-        Self { value: 0 }
+    pub fn new(flag_str: &str) -> Self {
+        let mut flags = Self::default();
+
+        for ch in flag_str.chars() {
+            let flag = RegularExpressionFlag::try_from(ch).unwrap();
+            flags.add_flag(flag);
+        }
+
+        flags
     }
 
     fn add_flag(&mut self, flag: RegularExpressionFlag) {
@@ -1411,19 +1418,19 @@ with no substitutions`
             Token::Decimal(45600.0),
             Token::Decimal(45600.0),
             Token::Decimal(4.56),
-            Token::Binary(21),
-            Token::Binary(11),
-            Token::Binary(21),
-            Token::Binary(11),
-            Token::Octal(668),
-            Token::Octal(375),
-            Token::Octal(668),
-            Token::Octal(375),
-            Token::Hex(4550461),
-            Token::Hex(633807),
-            Token::Hex(4550461),
-            Token::Hex(633807),
-            Token::LegacyOctal(343525),
+            Token::Binary(21.0),
+            Token::Binary(11.0),
+            Token::Binary(21.0),
+            Token::Binary(11.0),
+            Token::Octal(668.0),
+            Token::Octal(375.0),
+            Token::Octal(668.0),
+            Token::Octal(375.0),
+            Token::Hex(4550461.0),
+            Token::Hex(633807.0),
+            Token::Hex(4550461.0),
+            Token::Hex(633807.0),
+            Token::LegacyOctal(343525.0),
             Token::Decimal(89234.6),
             Token::Decimal(78.0),
             Token::Decimal(8700.0),
