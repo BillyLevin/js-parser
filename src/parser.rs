@@ -32,31 +32,7 @@ impl<'src> Parser<'src> {
         parser
     }
 
-    fn next_token(&mut self) {
-        self.current_token = self.peek_token.clone();
-        self.peek_token = self.lexer.next_token();
-    }
-
-    fn expect_peek(&mut self, token: Token) -> bool {
-        if self.peek_token == token {
-            self.next_token();
-            true
-        } else {
-            self.errors
-                .push(format!("expected {}, got {}", token, self.peek_token));
-            false
-        }
-    }
-
-    /// [Automatic Semicolon Insertion](https://tc39.es/ecma262/#sec-automatic-semicolon-insertion)
-    /// TODO: check if allowed to insert semicolon and return a `Result`
-    fn eat_or_insert_semicolon(&mut self) {
-        if self.current_token == Token::Semicolon {
-            self.next_token();
-        }
-    }
-
-    fn parse_program(&mut self) -> Program {
+    pub fn parse_program(&mut self) -> Program {
         let mut program: Program = Program::default();
 
         loop {
@@ -79,6 +55,30 @@ impl<'src> Parser<'src> {
         }
 
         program
+    }
+
+    fn next_token(&mut self) {
+        self.current_token = self.peek_token.clone();
+        self.peek_token = self.lexer.next_token();
+    }
+
+    fn expect_peek(&mut self, token: Token) -> bool {
+        if self.peek_token == token {
+            self.next_token();
+            true
+        } else {
+            self.errors
+                .push(format!("expected {}, got {}", token, self.peek_token));
+            false
+        }
+    }
+
+    /// [Automatic Semicolon Insertion](https://tc39.es/ecma262/#sec-automatic-semicolon-insertion)
+    /// TODO: check if allowed to insert semicolon and return a `Result`
+    fn eat_or_insert_semicolon(&mut self) {
+        if self.current_token == Token::Semicolon {
+            self.next_token();
+        }
     }
 
     fn parse_variable_statement(&mut self, kind: VariableDeclarationKind) -> Option<Statement> {
