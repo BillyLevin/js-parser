@@ -58,6 +58,7 @@ impl<'src> Parser<'src> {
 
             let maybe_statement = match self.current_token {
                 Token::Var => self.parse_variable_statement(VariableDeclarationKind::Var),
+                Token::Debugger => self.parse_debugger_statement(),
                 _ => None,
             };
 
@@ -157,23 +158,26 @@ impl<'src> Parser<'src> {
 
         lhs
     }
+
+    fn parse_debugger_statement(&mut self) -> Option<Statement> {
+        debug_assert_eq!(self.current_token, Token::Debugger);
+        // self.next_token();
+
+        Some(Statement::DebuggerStatement)
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        ast::{
-            BooleanLiteral, Declaration, Expression, Identifier, Literal, NumberLiteral, Pattern,
-            RegExp, RegExpLiteral, Statement, StringLiteral, VariableDeclaration,
-            VariableDeclarationKind, VariableDeclarator,
-        },
-        lexer::RegularExpressionFlags,
+    use crate::ast::{
+        BooleanLiteral, Declaration, Expression, Identifier, Literal, NumberLiteral, Pattern,
+        Statement, StringLiteral, VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
     };
 
     use super::*;
 
     #[test]
-    fn parse_var_statements() {
+    fn parse_variable_statement() {
         let input = r#"
             var x = 5;
             var y = "hello";
@@ -274,6 +278,28 @@ mod tests {
                         init: Some(Expression::Literal(Literal::NullLiteral))
                     }]
                 })),
+            ]
+        );
+    }
+
+    #[test]
+    fn parse_basic_statements() {
+        let input = "
+            debugger;debugger
+            debugger
+        ";
+
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+
+        let program = parser.parse_program();
+
+        assert_eq!(
+            program.body,
+            vec![
+                Statement::DebuggerStatement,
+                Statement::DebuggerStatement,
+                Statement::DebuggerStatement
             ]
         );
     }
