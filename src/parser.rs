@@ -48,6 +48,14 @@ impl<'src> Parser<'src> {
         }
     }
 
+    /// [Automatic Semicolon Insertion](https://tc39.es/ecma262/#sec-automatic-semicolon-insertion)
+    /// TODO: check if allowed to insert semicolon and return a `Result`
+    fn eat_or_insert_semicolon(&mut self) {
+        if self.current_token == Token::Semicolon {
+            self.next_token();
+        }
+    }
+
     fn parse_program(&mut self) -> Program {
         let mut program: Program = Program::default();
 
@@ -56,24 +64,27 @@ impl<'src> Parser<'src> {
                 break;
             }
 
-            let maybe_statement = match self.current_token {
+            let statement = match self.current_token {
                 Token::Var => self.parse_variable_statement(VariableDeclarationKind::Var),
                 Token::Debugger => self.parse_debugger_statement(),
+                Token::Semicolon => self.parse_empty_statement(),
                 _ => None,
             };
 
-            if let Some(statement) = maybe_statement {
+            if let Some(statement) = statement {
                 program.push_statement(statement);
+            } else {
+                break;
             }
-
-            self.next_token();
         }
 
         program
     }
 
     fn parse_variable_statement(&mut self, kind: VariableDeclarationKind) -> Option<Statement> {
-        let Token::Identifier(ref identifier) = self.peek_token else {
+        self.next_token();
+
+        let Token::Identifier(ref identifier) = self.current_token else {
             self.errors
                 .push(format!("expected identifier, got {}", self.peek_token));
             return None;
@@ -83,8 +94,7 @@ impl<'src> Parser<'src> {
 
         self.next_token();
 
-        let initializer = if self.peek_token == Token::Equal {
-            self.next_token();
+        let initializer = if self.current_token == Token::Equal {
             self.next_token();
             Some(self.parse_assignment_expression()?)
         } else {
@@ -95,6 +105,8 @@ impl<'src> Parser<'src> {
             id: Pattern::Identifier(Identifier { name: identifier }),
             init: initializer,
         };
+
+        self.eat_or_insert_semicolon();
 
         Some(Statement::Declaration(Declaration::VariableDeclaration(
             VariableDeclaration {
@@ -160,10 +172,15 @@ impl<'src> Parser<'src> {
     }
 
     fn parse_debugger_statement(&mut self) -> Option<Statement> {
-        debug_assert_eq!(self.current_token, Token::Debugger);
-        // self.next_token();
+        self.next_token();
+        self.eat_or_insert_semicolon();
 
         Some(Statement::DebuggerStatement)
+    }
+
+    fn parse_empty_statement(&mut self) -> Option<Statement> {
+        self.next_token();
+        Some(Statement::EmptyStatement)
     }
 }
 
@@ -178,13 +195,14 @@ mod tests {
 
     #[test]
     fn parse_variable_statement() {
+        // TODO: add these back when they can be parsed
+        // var b, c
+        // var myRegex = /[hello](.*)world[0-9]$/gmi;
         let input = r#"
             var x = 5;
             var y = "hello";
             var z = false;
             var a;
-            // var b, c
-            // var myRegex = /[hello](.*)world[0-9]$/gmi;
             var d = null;
         "#;
 
@@ -287,6 +305,7 @@ mod tests {
         let input = "
             debugger;debugger
             debugger
+            ;;
         ";
 
         let lexer = Lexer::new(input);
@@ -299,7 +318,8 @@ mod tests {
             vec![
                 Statement::DebuggerStatement,
                 Statement::DebuggerStatement,
-                Statement::DebuggerStatement
+                Statement::DebuggerStatement,
+                Statement::EmptyStatement,
             ]
         );
     }
