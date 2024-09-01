@@ -1,8 +1,8 @@
 use crate::{
     ast::{
-        BooleanLiteral, Declaration, Expression, Identifier, Literal, NumberLiteral, Pattern,
-        Program, RegExp, RegExpLiteral, Statement, StringLiteral, VariableDeclaration,
-        VariableDeclarationKind, VariableDeclarator,
+        BooleanLiteral, BreakStatement, Declaration, Expression, Identifier, Literal,
+        NumberLiteral, Pattern, Program, RegExp, RegExpLiteral, Statement, StringLiteral,
+        VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
     },
     lexer::{token::Token, Lexer},
 };
@@ -44,6 +44,7 @@ impl<'src> Parser<'src> {
                 Token::Var => self.parse_variable_statement(VariableDeclarationKind::Var),
                 Token::Debugger => self.parse_debugger_statement(),
                 Token::Semicolon => self.parse_empty_statement(),
+                Token::Break => self.parse_break_statement(),
                 _ => None,
             };
 
@@ -182,13 +183,32 @@ impl<'src> Parser<'src> {
         self.next_token();
         Some(Statement::EmptyStatement)
     }
+
+    fn parse_break_statement(&mut self) -> Option<Statement> {
+        self.next_token();
+
+        let identifier = if let Token::Identifier(name) = &self.current_token {
+            Some(Identifier {
+                name: name.to_string(),
+            })
+        } else {
+            None
+        };
+
+        self.eat_or_insert_semicolon();
+
+        Some(Statement::BreakStatement(BreakStatement {
+            label: identifier,
+        }))
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::ast::{
-        BooleanLiteral, Declaration, Expression, Identifier, Literal, NumberLiteral, Pattern,
-        Statement, StringLiteral, VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
+        BooleanLiteral, BreakStatement, Declaration, Expression, Identifier, Literal,
+        NumberLiteral, Pattern, Statement, StringLiteral, VariableDeclaration,
+        VariableDeclarationKind, VariableDeclarator,
     };
 
     use super::*;
@@ -306,6 +326,9 @@ mod tests {
             debugger;debugger
             debugger
             ;;
+            break;
+            break
+            break someLabel;
         ";
 
         let lexer = Lexer::new(input);
@@ -320,6 +343,13 @@ mod tests {
                 Statement::DebuggerStatement,
                 Statement::DebuggerStatement,
                 Statement::EmptyStatement,
+                Statement::BreakStatement(BreakStatement { label: None }),
+                Statement::BreakStatement(BreakStatement { label: None }),
+                Statement::BreakStatement(BreakStatement {
+                    label: Some(Identifier {
+                        name: "someLabel".to_string()
+                    })
+                }),
             ]
         );
     }

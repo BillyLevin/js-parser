@@ -21,7 +21,7 @@ pub enum Statement {
     IfStatement,
     BreakableStatement,
     ContinueStatement,
-    BreakStatement,
+    BreakStatement(BreakStatement),
     ReturnStatement,
     WithStatement,
     LabelledStatement,
@@ -118,4 +118,10 @@ pub struct RegExpLiteral {
 pub struct RegExp {
     pub pattern: String,
     pub flags: RegularExpressionFlags,
+}
+
+/// https://github.com/estree/estree/blob/master/es5.md#breakstatement
+#[derive(Debug, PartialEq)]
+pub struct BreakStatement {
+    pub label: Option<Identifier>,
 }
