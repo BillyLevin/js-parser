@@ -228,7 +228,9 @@ impl<'src> Parser<'src> {
             }
         }
 
-        self.next_token();
+        if self.expect_current(Token::RightBrace).is_err() {
+            return None;
+        }
 
         Some(Statement::BlockStatement(BlockStatement {
             body: statement_list,
@@ -240,14 +242,14 @@ impl<'src> Parser<'src> {
         self.peek_token = self.lexer.next_token();
     }
 
-    fn expect_peek(&mut self, token: Token) -> bool {
-        if self.peek_token == token {
+    fn expect_current(&mut self, token: Token) -> Result<(), ()> {
+        if self.current_token == token {
             self.next_token();
-            true
+            Ok(())
         } else {
             self.errors
-                .push(format!("expected {}, got {}", token, self.peek_token));
-            false
+                .push(format!("expected {}, got {}", token, self.current_token));
+            Err(())
         }
     }
 
@@ -444,6 +446,7 @@ mod tests {
             var a = "thing";
             { var a = "another thing"; var b = 54 }
             {}
+            { var c = "hello";
         "#;
 
         let lexer = Lexer::new(input);
@@ -530,5 +533,7 @@ mod tests {
                 Statement::BlockStatement(BlockStatement { body: vec![] })
             ]
         );
+
+        assert_eq!(parser.errors, vec!["expected }, got EOF"]);
     }
 }
