@@ -16,6 +16,8 @@ pub struct Parser<'src> {
     errors: Vec<String>,
 }
 
+type ParseResult<T> = Result<T, ()>;
+
 impl<'src> Parser<'src> {
     pub fn new(lexer: Lexer<'src>) -> Self {
         let mut parser = Self {
@@ -40,7 +42,7 @@ impl<'src> Parser<'src> {
                 break;
             }
 
-            if let Some(statement) = self.parse_statement() {
+            if let Ok(statement) = self.parse_statement() {
                 program.push_statement(statement);
             } else {
                 break;
@@ -52,7 +54,7 @@ impl<'src> Parser<'src> {
 
     /// https://tc39.es/ecma262/#prod-StatementListItem
     /// includes statements and declarations
-    fn parse_statement(&mut self) -> Option<Statement> {
+    fn parse_statement(&mut self) -> ParseResult<Statement> {
         match self.current_token {
             Token::Var => self.parse_variable_statement(VariableDeclarationKind::Var),
             Token::Debugger => self.parse_debugger_statement(),
@@ -60,17 +62,20 @@ impl<'src> Parser<'src> {
             Token::Break => self.parse_break_statement(),
             Token::Continue => self.parse_continue_statement(),
             Token::LeftBrace => self.parse_block_statement(),
-            _ => None,
+            _ => Err(()),
         }
     }
 
-    fn parse_variable_statement(&mut self, kind: VariableDeclarationKind) -> Option<Statement> {
+    fn parse_variable_statement(
+        &mut self,
+        kind: VariableDeclarationKind,
+    ) -> ParseResult<Statement> {
         self.next_token();
 
         let Token::Identifier(ref identifier) = self.current_token else {
             self.errors
                 .push(format!("expected identifier, got {}", self.peek_token));
-            return None;
+            return Err(());
         };
 
         let identifier = identifier.to_string();
@@ -91,7 +96,7 @@ impl<'src> Parser<'src> {
 
         self.eat_or_insert_semicolon();
 
-        Some(Statement::Declaration(Declaration::VariableDeclaration(
+        Ok(Statement::Declaration(Declaration::VariableDeclaration(
             VariableDeclaration {
                 kind,
                 declarations: vec![declarator],
@@ -104,21 +109,21 @@ impl<'src> Parser<'src> {
     ///
     /// this function handles the ECMAScript version (which includes the estree version as a
     /// subset)
-    fn parse_assignment_expression(&mut self) -> Option<Expression> {
+    fn parse_assignment_expression(&mut self) -> ParseResult<Expression> {
         self.parse_conditional_expression()
     }
 
     /// https://tc39.es/ecma262/#prod-ConditionalExpression
-    fn parse_conditional_expression(&mut self) -> Option<Expression> {
+    fn parse_conditional_expression(&mut self) -> ParseResult<Expression> {
         let lhs = self.parse_prefix_expression()?;
 
-        Some(lhs)
+        Ok(lhs)
     }
 
-    fn parse_prefix_expression(&mut self) -> Option<Expression> {
+    fn parse_prefix_expression(&mut self) -> ParseResult<Expression> {
         let lhs = match &self.current_token {
             Token::String(value) => {
-                Some(Expression::Literal(Literal::StringLiteral(StringLiteral {
+                Ok(Expression::Literal(Literal::StringLiteral(StringLiteral {
                     value: value.to_string(),
                 })))
             }
@@ -127,26 +132,26 @@ impl<'src> Parser<'src> {
             | Token::Octal(value)
             | Token::Hex(value)
             | Token::LegacyOctal(value) => {
-                Some(Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                Ok(Expression::Literal(Literal::NumberLiteral(NumberLiteral {
                     value: *value,
                 })))
             }
-            Token::True => Some(Expression::Literal(Literal::BooleanLiteral(
+            Token::True => Ok(Expression::Literal(Literal::BooleanLiteral(
                 BooleanLiteral { value: true },
             ))),
-            Token::False => Some(Expression::Literal(Literal::BooleanLiteral(
+            Token::False => Ok(Expression::Literal(Literal::BooleanLiteral(
                 BooleanLiteral { value: false },
             ))),
-            Token::Null => Some(Expression::Literal(Literal::NullLiteral)),
+            Token::Null => Ok(Expression::Literal(Literal::NullLiteral)),
             Token::RegularExpression { body, flags } => {
-                Some(Expression::Literal(Literal::RegExpLiteral(RegExpLiteral {
+                Ok(Expression::Literal(Literal::RegExpLiteral(RegExpLiteral {
                     regex: RegExp {
                         pattern: body.to_string(),
                         flags: flags.clone(),
                     },
                 })))
             }
-            _ => None,
+            _ => Err(()),
         };
 
         self.next_token();
@@ -154,19 +159,19 @@ impl<'src> Parser<'src> {
         lhs
     }
 
-    fn parse_debugger_statement(&mut self) -> Option<Statement> {
+    fn parse_debugger_statement(&mut self) -> ParseResult<Statement> {
         self.next_token();
         self.eat_or_insert_semicolon();
 
-        Some(Statement::DebuggerStatement)
+        Ok(Statement::DebuggerStatement)
     }
 
-    fn parse_empty_statement(&mut self) -> Option<Statement> {
+    fn parse_empty_statement(&mut self) -> ParseResult<Statement> {
         self.next_token();
-        Some(Statement::EmptyStatement)
+        Ok(Statement::EmptyStatement)
     }
 
-    fn parse_break_statement(&mut self) -> Option<Statement> {
+    fn parse_break_statement(&mut self) -> ParseResult<Statement> {
         self.next_token();
 
         let identifier = if let Token::Identifier(name) = &self.current_token {
@@ -183,12 +188,12 @@ impl<'src> Parser<'src> {
 
         self.eat_or_insert_semicolon();
 
-        Some(Statement::BreakStatement(BreakStatement {
+        Ok(Statement::BreakStatement(BreakStatement {
             label: identifier,
         }))
     }
 
-    fn parse_continue_statement(&mut self) -> Option<Statement> {
+    fn parse_continue_statement(&mut self) -> ParseResult<Statement> {
         self.next_token();
 
         let identifier = if let Token::Identifier(name) = &self.current_token {
@@ -205,13 +210,13 @@ impl<'src> Parser<'src> {
 
         self.eat_or_insert_semicolon();
 
-        Some(Statement::ContinueStatement(ContinueStatement {
+        Ok(Statement::ContinueStatement(ContinueStatement {
             label: identifier,
         }))
     }
 
     /// https://tc39.es/ecma262/#prod-BlockStatement
-    fn parse_block_statement(&mut self) -> Option<Statement> {
+    fn parse_block_statement(&mut self) -> ParseResult<Statement> {
         self.next_token();
 
         let mut statement_list = Vec::new();
@@ -221,18 +226,16 @@ impl<'src> Parser<'src> {
                 break;
             }
 
-            if let Some(statement) = self.parse_statement() {
+            if let Ok(statement) = self.parse_statement() {
                 statement_list.push(statement);
             } else {
                 break;
             }
         }
 
-        if self.expect_current(Token::RightBrace).is_err() {
-            return None;
-        }
+        self.expect_current(Token::RightBrace)?;
 
-        Some(Statement::BlockStatement(BlockStatement {
+        Ok(Statement::BlockStatement(BlockStatement {
             body: statement_list,
         }))
     }
