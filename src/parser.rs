@@ -1,8 +1,8 @@
 use crate::{
     ast::{
-        BooleanLiteral, BreakStatement, ContinueStatement, Declaration, Expression, Identifier,
-        Literal, NumberLiteral, Pattern, Program, RegExp, RegExpLiteral, Statement, StringLiteral,
-        VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
+        BlockStatement, BooleanLiteral, BreakStatement, ContinueStatement, Declaration, Expression,
+        Identifier, Literal, NumberLiteral, Pattern, Program, RegExp, RegExpLiteral, Statement,
+        StringLiteral, VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
     },
     lexer::{token::Token, Lexer},
 };
@@ -46,6 +46,7 @@ impl<'src> Parser<'src> {
                 Token::Semicolon => self.parse_empty_statement(),
                 Token::Break => self.parse_break_statement(),
                 Token::Continue => self.parse_continue_statement(),
+                Token::LeftBrace => self.parse_block_statement(),
                 _ => None,
             };
 
@@ -228,13 +229,48 @@ impl<'src> Parser<'src> {
             label: identifier,
         }))
     }
+
+    /// https://tc39.es/ecma262/#prod-BlockStatement
+    fn parse_block_statement(&mut self) -> Option<Statement> {
+        self.next_token();
+
+        let mut statement_list = Vec::new();
+
+        loop {
+            if self.current_token == Token::RightBrace || self.current_token == Token::Eof {
+                break;
+            }
+
+            let statement = match self.current_token {
+                Token::Var => self.parse_variable_statement(VariableDeclarationKind::Var),
+                Token::Debugger => self.parse_debugger_statement(),
+                Token::Semicolon => self.parse_empty_statement(),
+                Token::Break => self.parse_break_statement(),
+                Token::Continue => self.parse_continue_statement(),
+                Token::LeftBrace => self.parse_block_statement(),
+                _ => None,
+            };
+
+            if let Some(statement) = statement {
+                statement_list.push(statement);
+            } else {
+                break;
+            }
+        }
+
+        self.next_token();
+
+        Some(Statement::BlockStatement(BlockStatement {
+            body: statement_list,
+        }))
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::ast::{
-        BooleanLiteral, BreakStatement, ContinueStatement, Declaration, Expression, Identifier,
-        Literal, NumberLiteral, Pattern, Statement, StringLiteral, VariableDeclaration,
+        BlockStatement, BooleanLiteral, BreakStatement, ContinueStatement, Declaration, Expression,
+        Identifier, Literal, NumberLiteral, Pattern, Statement, StringLiteral, VariableDeclaration,
         VariableDeclarationKind, VariableDeclarator,
     };
 
@@ -387,6 +423,117 @@ mod tests {
                         name: "someLabel".to_string()
                     })
                 }),
+            ]
+        );
+    }
+
+    #[test]
+    fn parse_block_statements() {
+        let input = r#"
+            {
+                debugger;debugger
+                debugger
+                ;;
+            }
+            {
+                break;
+                break
+                break someLabel;
+            }
+
+            {
+                continue;
+                continue
+                continue someLabel;
+            }
+
+            var a = "thing";
+            { var a = "another thing"; var b = 54 }
+            {}
+        "#;
+
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+
+        let program = parser.parse_program();
+
+        assert_eq!(
+            program.body,
+            vec![
+                Statement::BlockStatement(BlockStatement {
+                    body: vec![
+                        Statement::DebuggerStatement,
+                        Statement::DebuggerStatement,
+                        Statement::DebuggerStatement,
+                        Statement::EmptyStatement,
+                    ]
+                }),
+                Statement::BlockStatement(BlockStatement {
+                    body: vec![
+                        Statement::BreakStatement(BreakStatement { label: None }),
+                        Statement::BreakStatement(BreakStatement { label: None }),
+                        Statement::BreakStatement(BreakStatement {
+                            label: Some(Identifier {
+                                name: "someLabel".to_string()
+                            })
+                        }),
+                    ]
+                }),
+                Statement::BlockStatement(BlockStatement {
+                    body: vec![
+                        Statement::ContinueStatement(ContinueStatement { label: None }),
+                        Statement::ContinueStatement(ContinueStatement { label: None }),
+                        Statement::ContinueStatement(ContinueStatement {
+                            label: Some(Identifier {
+                                name: "someLabel".to_string()
+                            })
+                        }),
+                    ]
+                }),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "a".to_string()
+                        }),
+                        init: Some(Expression::Literal(Literal::StringLiteral(StringLiteral {
+                            value: "thing".to_string()
+                        })))
+                    }]
+                })),
+                Statement::BlockStatement(BlockStatement {
+                    body: vec![
+                        Statement::Declaration(Declaration::VariableDeclaration(
+                            VariableDeclaration {
+                                kind: VariableDeclarationKind::Var,
+                                declarations: vec![VariableDeclarator {
+                                    id: Pattern::Identifier(Identifier {
+                                        name: "a".to_string()
+                                    }),
+                                    init: Some(Expression::Literal(Literal::StringLiteral(
+                                        StringLiteral {
+                                            value: "another thing".to_string()
+                                        }
+                                    )))
+                                }]
+                            }
+                        )),
+                        Statement::Declaration(Declaration::VariableDeclaration(
+                            VariableDeclaration {
+                                kind: VariableDeclarationKind::Var,
+                                declarations: vec![VariableDeclarator {
+                                    id: Pattern::Identifier(Identifier {
+                                        name: "b".to_string()
+                                    }),
+                                    init: Some(Expression::Literal(Literal::NumberLiteral(
+                                        NumberLiteral { value: 54.0 }
+                                    )))
+                                }]
+                            }
+                        ))
+                    ]
+                }),
+                Statement::BlockStatement(BlockStatement { body: vec![] })
             ]
         );
     }

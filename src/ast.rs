@@ -15,7 +15,7 @@ impl Program {
 pub enum Statement {
     // TODO: check if this stuff is all in estree. might be differences like with variable
     // declarations
-    BlockStatement,
+    BlockStatement(BlockStatement),
     EmptyStatement,
     ExpressionStatement,
     IfStatement,
@@ -130,4 +130,10 @@ pub struct BreakStatement {
 #[derive(Debug, PartialEq)]
 pub struct ContinueStatement {
     pub label: Option<Identifier>,
+}
+
+/// https://github.com/estree/estree/blob/master/es5.md#blockstatement
+#[derive(Debug, PartialEq)]
+pub struct BlockStatement {
+    pub body: Vec<Statement>,
 }
