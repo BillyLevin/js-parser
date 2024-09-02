@@ -40,17 +40,7 @@ impl<'src> Parser<'src> {
                 break;
             }
 
-            let statement = match self.current_token {
-                Token::Var => self.parse_variable_statement(VariableDeclarationKind::Var),
-                Token::Debugger => self.parse_debugger_statement(),
-                Token::Semicolon => self.parse_empty_statement(),
-                Token::Break => self.parse_break_statement(),
-                Token::Continue => self.parse_continue_statement(),
-                Token::LeftBrace => self.parse_block_statement(),
-                _ => None,
-            };
-
-            if let Some(statement) = statement {
+            if let Some(statement) = self.parse_statement() {
                 program.push_statement(statement);
             } else {
                 break;
@@ -60,27 +50,17 @@ impl<'src> Parser<'src> {
         program
     }
 
-    fn next_token(&mut self) {
-        self.current_token = self.peek_token.clone();
-        self.peek_token = self.lexer.next_token();
-    }
-
-    fn expect_peek(&mut self, token: Token) -> bool {
-        if self.peek_token == token {
-            self.next_token();
-            true
-        } else {
-            self.errors
-                .push(format!("expected {}, got {}", token, self.peek_token));
-            false
-        }
-    }
-
-    /// [Automatic Semicolon Insertion](https://tc39.es/ecma262/#sec-automatic-semicolon-insertion)
-    /// TODO: check if allowed to insert semicolon and return a `Result`
-    fn eat_or_insert_semicolon(&mut self) {
-        if self.current_token == Token::Semicolon {
-            self.next_token();
+    /// https://tc39.es/ecma262/#prod-StatementListItem
+    /// includes statements and declarations
+    fn parse_statement(&mut self) -> Option<Statement> {
+        match self.current_token {
+            Token::Var => self.parse_variable_statement(VariableDeclarationKind::Var),
+            Token::Debugger => self.parse_debugger_statement(),
+            Token::Semicolon => self.parse_empty_statement(),
+            Token::Break => self.parse_break_statement(),
+            Token::Continue => self.parse_continue_statement(),
+            Token::LeftBrace => self.parse_block_statement(),
+            _ => None,
         }
     }
 
@@ -241,17 +221,7 @@ impl<'src> Parser<'src> {
                 break;
             }
 
-            let statement = match self.current_token {
-                Token::Var => self.parse_variable_statement(VariableDeclarationKind::Var),
-                Token::Debugger => self.parse_debugger_statement(),
-                Token::Semicolon => self.parse_empty_statement(),
-                Token::Break => self.parse_break_statement(),
-                Token::Continue => self.parse_continue_statement(),
-                Token::LeftBrace => self.parse_block_statement(),
-                _ => None,
-            };
-
-            if let Some(statement) = statement {
+            if let Some(statement) = self.parse_statement() {
                 statement_list.push(statement);
             } else {
                 break;
@@ -263,6 +233,30 @@ impl<'src> Parser<'src> {
         Some(Statement::BlockStatement(BlockStatement {
             body: statement_list,
         }))
+    }
+
+    fn next_token(&mut self) {
+        self.current_token = self.peek_token.clone();
+        self.peek_token = self.lexer.next_token();
+    }
+
+    fn expect_peek(&mut self, token: Token) -> bool {
+        if self.peek_token == token {
+            self.next_token();
+            true
+        } else {
+            self.errors
+                .push(format!("expected {}, got {}", token, self.peek_token));
+            false
+        }
+    }
+
+    /// [Automatic Semicolon Insertion](https://tc39.es/ecma262/#sec-automatic-semicolon-insertion)
+    /// TODO: check if allowed to insert semicolon and return a `Result`
+    fn eat_or_insert_semicolon(&mut self) {
+        if self.current_token == Token::Semicolon {
+            self.next_token();
+        }
     }
 }
 
