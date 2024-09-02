@@ -20,7 +20,7 @@ pub enum Statement {
     ExpressionStatement,
     IfStatement,
     BreakableStatement,
-    ContinueStatement,
+    ContinueStatement(ContinueStatement),
     BreakStatement(BreakStatement),
     ReturnStatement,
     WithStatement,
@@ -123,5 +123,11 @@ pub struct RegExp {
 /// https://github.com/estree/estree/blob/master/es5.md#breakstatement
 #[derive(Debug, PartialEq)]
 pub struct BreakStatement {
+    pub label: Option<Identifier>,
+}
+
+/// https://github.com/estree/estree/blob/master/es5.md#continuestatement
+#[derive(Debug, PartialEq)]
+pub struct ContinueStatement {
     pub label: Option<Identifier>,
 }

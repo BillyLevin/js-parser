@@ -1,7 +1,7 @@
 use crate::{
     ast::{
-        BooleanLiteral, BreakStatement, Declaration, Expression, Identifier, Literal,
-        NumberLiteral, Pattern, Program, RegExp, RegExpLiteral, Statement, StringLiteral,
+        BooleanLiteral, BreakStatement, ContinueStatement, Declaration, Expression, Identifier,
+        Literal, NumberLiteral, Pattern, Program, RegExp, RegExpLiteral, Statement, StringLiteral,
         VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
     },
     lexer::{token::Token, Lexer},
@@ -45,6 +45,7 @@ impl<'src> Parser<'src> {
                 Token::Debugger => self.parse_debugger_statement(),
                 Token::Semicolon => self.parse_empty_statement(),
                 Token::Break => self.parse_break_statement(),
+                Token::Continue => self.parse_continue_statement(),
                 _ => None,
             };
 
@@ -195,9 +196,35 @@ impl<'src> Parser<'src> {
             None
         };
 
+        if identifier.is_some() {
+            self.next_token();
+        }
+
         self.eat_or_insert_semicolon();
 
         Some(Statement::BreakStatement(BreakStatement {
+            label: identifier,
+        }))
+    }
+
+    fn parse_continue_statement(&mut self) -> Option<Statement> {
+        self.next_token();
+
+        let identifier = if let Token::Identifier(name) = &self.current_token {
+            Some(Identifier {
+                name: name.to_string(),
+            })
+        } else {
+            None
+        };
+
+        if identifier.is_some() {
+            self.next_token();
+        }
+
+        self.eat_or_insert_semicolon();
+
+        Some(Statement::ContinueStatement(ContinueStatement {
             label: identifier,
         }))
     }
@@ -206,8 +233,8 @@ impl<'src> Parser<'src> {
 #[cfg(test)]
 mod tests {
     use crate::ast::{
-        BooleanLiteral, BreakStatement, Declaration, Expression, Identifier, Literal,
-        NumberLiteral, Pattern, Statement, StringLiteral, VariableDeclaration,
+        BooleanLiteral, BreakStatement, ContinueStatement, Declaration, Expression, Identifier,
+        Literal, NumberLiteral, Pattern, Statement, StringLiteral, VariableDeclaration,
         VariableDeclarationKind, VariableDeclarator,
     };
 
@@ -329,6 +356,9 @@ mod tests {
             break;
             break
             break someLabel;
+            continue;
+            continue
+            continue someLabel;
         ";
 
         let lexer = Lexer::new(input);
@@ -346,6 +376,13 @@ mod tests {
                 Statement::BreakStatement(BreakStatement { label: None }),
                 Statement::BreakStatement(BreakStatement { label: None }),
                 Statement::BreakStatement(BreakStatement {
+                    label: Some(Identifier {
+                        name: "someLabel".to_string()
+                    })
+                }),
+                Statement::ContinueStatement(ContinueStatement { label: None }),
+                Statement::ContinueStatement(ContinueStatement { label: None }),
+                Statement::ContinueStatement(ContinueStatement {
                     label: Some(Identifier {
                         name: "someLabel".to_string()
                     })
