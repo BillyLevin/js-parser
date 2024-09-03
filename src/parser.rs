@@ -1,8 +1,9 @@
 use crate::{
     ast::{
         BlockStatement, BooleanLiteral, BreakStatement, ContinueStatement, Declaration, Expression,
-        Identifier, Literal, NumberLiteral, Pattern, Program, RegExp, RegExpLiteral, Statement,
-        StringLiteral, VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
+        Identifier, LabeledStatement, Literal, NumberLiteral, Pattern, Program, RegExp,
+        RegExpLiteral, Statement, StringLiteral, VariableDeclaration, VariableDeclarationKind,
+        VariableDeclarator,
     },
     lexer::{token::Token, Lexer},
 };
@@ -62,6 +63,9 @@ impl<'src> Parser<'src> {
             Token::Break => self.parse_break_statement(),
             Token::Continue => self.parse_continue_statement(),
             Token::LeftBrace => self.parse_block_statement(),
+            Token::Identifier(_) if self.peek_token == Token::Colon => {
+                self.parse_labeled_statement()
+            }
             _ => Err(()),
         }
     }
@@ -240,6 +244,26 @@ impl<'src> Parser<'src> {
         }))
     }
 
+    fn parse_labeled_statement(&mut self) -> ParseResult<Statement> {
+        let Token::Identifier(ref identifier) = self.current_token else {
+            self.errors
+                .push(format!("expected identifier, got {}", self.peek_token));
+            return Err(());
+        };
+
+        let identifier = identifier.to_string();
+
+        self.next_token();
+        self.expect_current(Token::Colon)?;
+
+        let statement = self.parse_statement()?;
+
+        Ok(Statement::LabeledStatement(Box::new(LabeledStatement {
+            label: Identifier { name: identifier },
+            body: statement,
+        })))
+    }
+
     fn next_token(&mut self) {
         self.current_token = self.peek_token.clone();
         self.peek_token = self.lexer.next_token();
@@ -269,8 +293,8 @@ impl<'src> Parser<'src> {
 mod tests {
     use crate::ast::{
         BlockStatement, BooleanLiteral, BreakStatement, ContinueStatement, Declaration, Expression,
-        Identifier, Literal, NumberLiteral, Pattern, Statement, StringLiteral, VariableDeclaration,
-        VariableDeclarationKind, VariableDeclarator,
+        Identifier, LabeledStatement, Literal, NumberLiteral, Pattern, Statement, StringLiteral,
+        VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
     };
 
     use super::*;
@@ -538,5 +562,62 @@ mod tests {
         );
 
         assert_eq!(parser.errors, vec!["expected }, got EOF"]);
+    }
+
+    #[test]
+    fn parse_labeled_statements() {
+        let input = r#"
+            myLabel123: var a = 4;
+            $label_456: var b = "hello";
+        "#;
+
+        let lexer = Lexer::new(input);
+        let mut parser = Parser::new(lexer);
+
+        let program = parser.parse_program();
+
+        assert_eq!(
+            program.body,
+            vec![
+                Statement::LabeledStatement(Box::new(LabeledStatement {
+                    label: Identifier {
+                        name: "myLabel123".to_string()
+                    },
+                    body: Statement::Declaration(Declaration::VariableDeclaration(
+                        VariableDeclaration {
+                            kind: VariableDeclarationKind::Var,
+                            declarations: vec![VariableDeclarator {
+                                id: Pattern::Identifier(Identifier {
+                                    name: "a".to_string()
+                                }),
+                                init: Some(Expression::Literal(Literal::NumberLiteral(
+                                    NumberLiteral { value: 4.0 }
+                                )))
+                            }]
+                        }
+                    ))
+                })),
+                Statement::LabeledStatement(Box::new(LabeledStatement {
+                    label: Identifier {
+                        name: "$label_456".to_string()
+                    },
+                    body: Statement::Declaration(Declaration::VariableDeclaration(
+                        VariableDeclaration {
+                            kind: VariableDeclarationKind::Var,
+                            declarations: vec![VariableDeclarator {
+                                id: Pattern::Identifier(Identifier {
+                                    name: "b".to_string()
+                                }),
+                                init: Some(Expression::Literal(Literal::StringLiteral(
+                                    StringLiteral {
+                                        value: "hello".to_string()
+                                    }
+                                )))
+                            }]
+                        }
+                    ))
+                }))
+            ]
+        );
     }
 }

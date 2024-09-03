@@ -24,7 +24,7 @@ pub enum Statement {
     BreakStatement(BreakStatement),
     ReturnStatement,
     WithStatement,
-    LabelledStatement,
+    LabeledStatement(Box<LabeledStatement>),
     ThrowStatement,
     TryStatement,
     DebuggerStatement,
@@ -136,4 +136,11 @@ pub struct ContinueStatement {
 #[derive(Debug, PartialEq)]
 pub struct BlockStatement {
     pub body: Vec<Statement>,
+}
+
+/// https://github.com/estree/estree/blob/master/es5.md#labeledstatement
+#[derive(Debug, PartialEq)]
+pub struct LabeledStatement {
+    pub label: Identifier,
+    pub body: Statement,
 }
