@@ -10,6 +10,7 @@ use self::{
     whitespace::{CR, FF, LF, TAB, VT},
 };
 
+#[derive(Debug, Clone)]
 pub struct Lexer<'src> {
     input: &'src str,
     read_position: usize,
@@ -736,7 +737,7 @@ impl<'src> Lexer<'src> {
         }
     }
 
-    fn read_regex(&mut self, current_token: Token) -> Token {
+    pub fn read_regex(&mut self, current_token: Token) -> Token {
         // the start token already gets read, so we need to backtrack to the beginning of
         // the regular expression
         let start_offset = match current_token {
@@ -746,7 +747,6 @@ impl<'src> Lexer<'src> {
         };
 
         self.read_position -= start_offset;
-        debug_assert!(self.read_position > 0);
 
         let mut body = String::new();
 
@@ -801,6 +801,8 @@ impl<'src> Lexer<'src> {
                 break;
             }
         }
+
+        self.next_char();
 
         Token::RegularExpression { body, flags }
     }
@@ -1513,13 +1515,13 @@ var { ]
     fn test_read_regex() {
         // we only know to tokenise a regex based on context in the parser, so we're testing the
         // regex functionality separately from the main test
-        let input = "/this\\/[0-9]+is(a.*)[/test\\]]\\[regex$/gid";
+        let input = "/this\\/[0-9]+is(a.*)[/test\\]]\\[regex$/gid; /=another/g";
 
         let mut lexer = Lexer::new(input);
 
         let original_token = lexer.next_token();
-
         assert_eq!(original_token, Token::Division);
+
         let regex_token = lexer.read_regex(original_token);
 
         if let Token::RegularExpression { body, flags } = regex_token {
@@ -1530,6 +1532,20 @@ var { ]
                     | RegularExpressionFlag::I as u8
                     | RegularExpressionFlag::D as u8
             );
+        } else {
+            panic!("Expected `RegularExpression` token");
+        }
+
+        assert_eq!(lexer.next_token(), Token::Semicolon);
+
+        let original_token = lexer.next_token();
+        assert_eq!(original_token, Token::DivisionEqual);
+
+        let regex_token = lexer.read_regex(original_token);
+
+        if let Token::RegularExpression { body, flags } = regex_token {
+            assert_eq!(body, "=another".to_string());
+            assert_eq!(flags, RegularExpressionFlag::G as u8);
         } else {
             panic!("Expected `RegularExpression` token");
         }

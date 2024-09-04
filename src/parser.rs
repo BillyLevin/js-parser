@@ -28,8 +28,7 @@ impl<'src> Parser<'src> {
             errors: Vec::new(),
         };
 
-        // populate `current_token` and `next_token`
-        parser.next_token();
+        // populate `current_token` and `peek_token`
         parser.next_token();
 
         parser
@@ -78,7 +77,7 @@ impl<'src> Parser<'src> {
 
         let Token::Identifier(ref identifier) = self.current_token else {
             self.errors
-                .push(format!("expected identifier, got {}", self.peek_token));
+                .push(format!("expected identifier, got {}", self.current_token));
             return Err(());
         };
 
@@ -111,8 +110,7 @@ impl<'src> Parser<'src> {
     /// note that the [`AssignmentExpression`](https://tc39.es/ecma262/#prod-AssignmentExpression) from the ECMAScript spec is more broad than the
     /// [`AssignmentExpression`](https://github.com/estree/estree/blob/master/es5.md#assignmentexpression) in the estree spec.
     ///
-    /// this function handles the ECMAScript version (which includes the estree version as a
-    /// subset)
+    /// this function handles the ECMAScript version (which includes the estree version as a subset)
     fn parse_assignment_expression(&mut self) -> ParseResult<Expression> {
         self.parse_conditional_expression()
     }
@@ -155,6 +153,7 @@ impl<'src> Parser<'src> {
                     },
                 })))
             }
+            Token::Division | Token::DivisionEqual => self.parse_regular_expression_literal(),
             _ => Err(()),
         };
 
@@ -247,7 +246,7 @@ impl<'src> Parser<'src> {
     fn parse_labeled_statement(&mut self) -> ParseResult<Statement> {
         let Token::Identifier(ref identifier) = self.current_token else {
             self.errors
-                .push(format!("expected identifier, got {}", self.peek_token));
+                .push(format!("expected identifier, got {}", self.current_token));
             return Err(());
         };
 
@@ -264,9 +263,24 @@ impl<'src> Parser<'src> {
         })))
     }
 
+    fn parse_regular_expression_literal(&mut self) -> ParseResult<Expression> {
+        let regex = self.lexer.read_regex(self.current_token.clone());
+
+        let Token::RegularExpression { body, flags } = regex else {
+            return Err(());
+        };
+
+        Ok(Expression::Literal(Literal::RegExpLiteral(RegExpLiteral {
+            regex: RegExp {
+                pattern: body,
+                flags,
+            },
+        })))
+    }
+
     fn next_token(&mut self) {
-        self.current_token = self.peek_token.clone();
-        self.peek_token = self.lexer.next_token();
+        self.current_token = self.lexer.next_token();
+        self.peek_token = self.lexer.clone().next_token();
     }
 
     fn expect_current(&mut self, token: Token) -> Result<(), ()> {
@@ -291,10 +305,13 @@ impl<'src> Parser<'src> {
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::{
-        BlockStatement, BooleanLiteral, BreakStatement, ContinueStatement, Declaration, Expression,
-        Identifier, LabeledStatement, Literal, NumberLiteral, Pattern, Statement, StringLiteral,
-        VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
+    use crate::{
+        ast::{
+            BlockStatement, BooleanLiteral, BreakStatement, ContinueStatement, Declaration,
+            Expression, Identifier, LabeledStatement, Literal, NumberLiteral, Pattern, Statement,
+            StringLiteral, VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
+        },
+        lexer::RegularExpressionFlags,
     };
 
     use super::*;
@@ -303,13 +320,14 @@ mod tests {
     fn parse_variable_statement() {
         // TODO: add these back when they can be parsed
         // var b, c
-        // var myRegex = /[hello](.*)world[0-9]$/gmi;
         let input = r#"
             var x = 5;
             var y = "hello";
             var z = false;
             var a;
             var d = null;
+            var myRegex = /[hello](.*)world[0-9]$/gmi;
+            var myRegex2 = /=start[a-z]\/with(.*)equals/yu;
         "#;
 
         let lexer = Lexer::new(input);
@@ -379,20 +397,6 @@ mod tests {
                 //         }
                 //     ]
                 // })),
-                // Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
-                //     kind: VariableDeclarationKind::Var,
-                //     declarations: vec![VariableDeclarator {
-                //         id: Pattern::Identifier(Identifier {
-                //             name: "myRegex".to_string()
-                //         }),
-                //         init: Some(Expression::Literal(Literal::RegExpLiteral(RegExpLiteral {
-                //             regex: RegExp {
-                //                 pattern: "[hello](.*)world[0-9]$".to_string(),
-                //                 flags: RegularExpressionFlags::new("gmi")
-                //             }
-                //         })))
-                //     },]
-                // })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
@@ -401,6 +405,34 @@ mod tests {
                         }),
                         init: Some(Expression::Literal(Literal::NullLiteral))
                     }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "myRegex".to_string()
+                        }),
+                        init: Some(Expression::Literal(Literal::RegExpLiteral(RegExpLiteral {
+                            regex: RegExp {
+                                pattern: "[hello](.*)world[0-9]$".to_string(),
+                                flags: RegularExpressionFlags::new("gmi")
+                            }
+                        })))
+                    },]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "myRegex2".to_string()
+                        }),
+                        init: Some(Expression::Literal(Literal::RegExpLiteral(RegExpLiteral {
+                            regex: RegExp {
+                                pattern: "=start[a-z]\\/with(.*)equals".to_string(),
+                                flags: RegularExpressionFlags::new("yu")
+                            }
+                        })))
+                    },]
                 })),
             ]
         );
