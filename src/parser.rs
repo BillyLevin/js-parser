@@ -379,6 +379,12 @@ mod tests {
             var exp2 = 45 * 7 ** 3;
             var remainder = 45 % 5 + 3;
             var remainder2 = 45 + 5 % 3;
+            var leftShift = 45 << 5 * 3;
+            var leftShift2 = 45 * 5 << 3;
+            var rightShift = 45 >> 5 * 3;
+            var rightShift2 = 45 * 5 >> 3;
+            var unsignedRightShift = 45 >>> 5 * 3;
+            var unsignedRightShift2 = 45 * 5 >>> 3;
         "#;
 
         let lexer = Lexer::new(input);
@@ -752,6 +758,144 @@ mod tests {
                                 operator: BinaryOperator::Remainder,
                             })),
                             operator: BinaryOperator::Plus
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "leftShift".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                value: 45.0
+                            })),
+                            right: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 5.0
+                                })),
+                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 3.0
+                                })),
+                                operator: BinaryOperator::Multiply,
+                            })),
+                            operator: BinaryOperator::LeftShift
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "leftShift2".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 45.0
+                                })),
+                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 5.0
+                                })),
+                                operator: BinaryOperator::Multiply,
+                            })),
+                            right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                value: 3.0
+                            })),
+                            operator: BinaryOperator::LeftShift
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "rightShift".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                value: 45.0
+                            })),
+                            right: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 5.0
+                                })),
+                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 3.0
+                                })),
+                                operator: BinaryOperator::Multiply,
+                            })),
+                            operator: BinaryOperator::RightShift
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "rightShift2".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 45.0
+                                })),
+                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 5.0
+                                })),
+                                operator: BinaryOperator::Multiply,
+                            })),
+                            right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                value: 3.0
+                            })),
+                            operator: BinaryOperator::RightShift
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "unsignedRightShift".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                value: 45.0
+                            })),
+                            right: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 5.0
+                                })),
+                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 3.0
+                                })),
+                                operator: BinaryOperator::Multiply,
+                            })),
+                            operator: BinaryOperator::UnsignedRightShift
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "unsignedRightShift2".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 45.0
+                                })),
+                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 5.0
+                                })),
+                                operator: BinaryOperator::Multiply,
+                            })),
+                            right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                value: 3.0
+                            })),
+                            operator: BinaryOperator::UnsignedRightShift
                         })))
                     }]
                 })),

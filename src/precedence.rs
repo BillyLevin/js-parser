@@ -37,6 +37,9 @@ impl TryFrom<&Token> for Precedence {
             Token::Plus | Token::Minus => Ok(Precedence::Addition),
             Token::Multiply | Token::Divide | Token::Percent => Ok(Precedence::Multiplication),
             Token::Exponentiation => Ok(Precedence::Exponentiation),
+            Token::LeftShift | Token::RightShift | Token::UnsignedRightShift => {
+                Ok(Precedence::BitwiseShift)
+            }
             _ => Err(()),
         }
     }

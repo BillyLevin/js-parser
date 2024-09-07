@@ -212,6 +212,9 @@ impl From<&Token> for BinaryOperator {
             Token::Divide => BinaryOperator::Divide,
             Token::Exponentiation => BinaryOperator::Exponentiation,
             Token::Percent => BinaryOperator::Remainder,
+            Token::LeftShift => BinaryOperator::LeftShift,
+            Token::RightShift => BinaryOperator::RightShift,
+            Token::UnsignedRightShift => BinaryOperator::UnsignedRightShift,
             _ => unreachable!("this function should only be called with tokens that can be mapped to a binary operation"),
         }
     }
