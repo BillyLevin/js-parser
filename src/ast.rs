@@ -199,6 +199,8 @@ pub enum BinaryOperator {
     In,
     /// `instanceof`
     Instanceof,
+    /// `**`
+    Exponentiation,
 }
 
 impl From<&Token> for BinaryOperator {
@@ -208,6 +210,7 @@ impl From<&Token> for BinaryOperator {
             Token::Minus => BinaryOperator::Minus,
             Token::Multiply => BinaryOperator::Multiply,
             Token::Divide => BinaryOperator::Divide,
+            Token::Exponentiation => BinaryOperator::Exponentiation,
             _ => unreachable!("this function should only be called with tokens that can be mapped to a binary operation"),
         }
     }

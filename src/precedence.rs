@@ -23,6 +23,12 @@ pub enum Precedence {
     Grouping,
 }
 
+impl Precedence {
+    pub fn is_right_associative(&self) -> bool {
+        matches!(self, Precedence::Assignment | Precedence::Exponentiation)
+    }
+}
+
 impl TryFrom<&Token> for Precedence {
     type Error = ();
 
@@ -30,6 +36,7 @@ impl TryFrom<&Token> for Precedence {
         match token {
             Token::Plus | Token::Minus => Ok(Precedence::Addition),
             Token::Multiply | Token::Divide => Ok(Precedence::Multiplication),
+            Token::Exponentiation => Ok(Precedence::Exponentiation),
             _ => Err(()),
         }
     }

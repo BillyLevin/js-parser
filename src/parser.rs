@@ -139,7 +139,11 @@ impl<'src> Parser<'src> {
                 break;
             };
 
-            if precedence <= min_precedence {
+            if precedence.is_right_associative() {
+                if precedence < min_precedence {
+                    break;
+                }
+            } else if precedence <= min_precedence {
                 break;
             }
 
@@ -371,6 +375,8 @@ mod tests {
             var precedence = 4 + 27 * 8;
             var precedence2 = 4 * 27 + 8;
             var lotsOfOperations = 4 * 27 / 45 + 4 - 7.5 * 2 + 67.45 / 3;
+            var exp = 4 ** 3 ** 2 + 34 * 4;
+            var exp2 = 45 * 7 ** 3;
         "#;
 
         let lexer = Lexer::new(input);
@@ -642,7 +648,65 @@ mod tests {
                             operator: BinaryOperator::Plus
                         })))
                     }]
-                }))
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "exp".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 4.0
+                                })),
+                                right: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                    left: Expression::Literal(Literal::NumberLiteral(
+                                        NumberLiteral { value: 3.0 }
+                                    )),
+                                    right: Expression::Literal(Literal::NumberLiteral(
+                                        NumberLiteral { value: 2.0 }
+                                    )),
+                                    operator: BinaryOperator::Exponentiation
+                                })),
+                                operator: BinaryOperator::Exponentiation
+                            })),
+                            right: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 34.0
+                                })),
+                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 4.0
+                                })),
+                                operator: BinaryOperator::Multiply,
+                            })),
+                            operator: BinaryOperator::Plus
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "exp2".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                value: 45.0
+                            })),
+                            right: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 7.0
+                                })),
+                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 3.0
+                                })),
+                                operator: BinaryOperator::Exponentiation,
+                            })),
+                            operator: BinaryOperator::Multiply
+                        })))
+                    }]
+                })),
             ]
         );
     }
