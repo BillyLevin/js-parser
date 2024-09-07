@@ -75,6 +75,30 @@ impl<'src> Parser<'src> {
     ) -> ParseResult<Statement> {
         self.next_token();
 
+        let mut declaration_list = Vec::new();
+
+        loop {
+            declaration_list.push(self.parse_variable_declarator()?);
+
+            if self.current_token == Token::Comma {
+                self.next_token();
+                continue;
+            }
+
+            break;
+        }
+
+        self.eat_or_insert_semicolon();
+
+        Ok(Statement::Declaration(Declaration::VariableDeclaration(
+            VariableDeclaration {
+                kind,
+                declarations: declaration_list,
+            },
+        )))
+    }
+
+    fn parse_variable_declarator(&mut self) -> ParseResult<VariableDeclarator> {
         let Token::Identifier(ref identifier) = self.current_token else {
             self.errors
                 .push(format!("expected identifier, got {}", self.current_token));
@@ -92,19 +116,10 @@ impl<'src> Parser<'src> {
             None
         };
 
-        let declarator = VariableDeclarator {
+        Ok(VariableDeclarator {
             id: Pattern::Identifier(Identifier { name: identifier }),
             init: initializer,
-        };
-
-        self.eat_or_insert_semicolon();
-
-        Ok(Statement::Declaration(Declaration::VariableDeclaration(
-            VariableDeclaration {
-                kind,
-                declarations: vec![declarator],
-            },
-        )))
+        })
     }
 
     /// note that the [`AssignmentExpression`](https://tc39.es/ecma262/#prod-AssignmentExpression) from the ECMAScript spec is more broad than the
@@ -319,7 +334,6 @@ mod tests {
     #[test]
     fn parse_variable_statement() {
         // TODO: add these back when they can be parsed
-        // var b, c
         let input = r#"
             var x = 5;
             var y = "hello";
@@ -328,6 +342,8 @@ mod tests {
             var d = null;
             var myRegex = /[hello](.*)world[0-9]$/gmi;
             var myRegex2 = /=start[a-z]\/with(.*)equals/yu;
+            var b, c = 4;
+            var hello = "world", bool = false;
         "#;
 
         let lexer = Lexer::new(input);
@@ -380,23 +396,6 @@ mod tests {
                         init: None
                     }]
                 })),
-                // Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
-                //     kind: VariableDeclarationKind::Var,
-                //     declarations: vec![
-                //         VariableDeclarator {
-                //             id: Pattern::Identifier(Identifier {
-                //                 name: "b".to_string()
-                //             }),
-                //             init: None
-                //         },
-                //         VariableDeclarator {
-                //             id: Pattern::Identifier(Identifier {
-                //                 name: "c".to_string()
-                //             }),
-                //             init: None
-                //         }
-                //     ]
-                // })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
@@ -434,6 +433,48 @@ mod tests {
                         })))
                     },]
                 })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![
+                        VariableDeclarator {
+                            id: Pattern::Identifier(Identifier {
+                                name: "b".to_string()
+                            }),
+                            init: None
+                        },
+                        VariableDeclarator {
+                            id: Pattern::Identifier(Identifier {
+                                name: "c".to_string()
+                            }),
+                            init: Some(Expression::Literal(Literal::NumberLiteral(
+                                NumberLiteral { value: 4.0 }
+                            )))
+                        }
+                    ]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![
+                        VariableDeclarator {
+                            id: Pattern::Identifier(Identifier {
+                                name: "hello".to_string()
+                            }),
+                            init: Some(Expression::Literal(Literal::StringLiteral(
+                                StringLiteral {
+                                    value: "world".to_string()
+                                }
+                            )))
+                        },
+                        VariableDeclarator {
+                            id: Pattern::Identifier(Identifier {
+                                name: "bool".to_string()
+                            }),
+                            init: Some(Expression::Literal(Literal::BooleanLiteral(
+                                BooleanLiteral { value: false }
+                            )))
+                        }
+                    ]
+                }))
             ]
         );
     }
