@@ -333,7 +333,6 @@ mod tests {
 
     #[test]
     fn parse_variable_statement() {
-        // TODO: add these back when they can be parsed
         let input = r#"
             var x = 5;
             var y = "hello";
