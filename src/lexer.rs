@@ -177,7 +177,7 @@ impl<'src> Lexer<'src> {
                 '/' => match self.peek_char() {
                     Some('=') => {
                         self.next_char();
-                        Token::DivisionEqual
+                        Token::DivideEqual
                     }
                     Some('/') => {
                         self.next_char();
@@ -187,7 +187,7 @@ impl<'src> Lexer<'src> {
                         self.next_char();
                         return self.read_multi_line_comment();
                     }
-                    _ => Token::Division,
+                    _ => Token::Divide,
                 },
 
                 '%' => match self.peek_char() {
@@ -741,8 +741,8 @@ impl<'src> Lexer<'src> {
         // the start token already gets read, so we need to backtrack to the beginning of
         // the regular expression
         let start_offset = match current_token {
-            Token::Division => 1,
-            Token::DivisionEqual => 2,
+            Token::Divide => 1,
+            Token::DivideEqual => 2,
             _ => unreachable!(),
         };
 
@@ -1313,7 +1313,7 @@ with no substitutions`
             Token::Plus,
             Token::Minus,
             Token::Multiply,
-            Token::Division,
+            Token::Divide,
             Token::Percent,
             Token::Exponentiation,
             Token::PlusPlus,
@@ -1321,7 +1321,7 @@ with no substitutions`
             Token::LeftShift,
             Token::RightShift,
             Token::UnsignedRightShift,
-            Token::Division,
+            Token::Divide,
             Token::Percent,
             Token::BitwiseAnd,
             Token::BitwiseOr,
@@ -1335,7 +1335,7 @@ with no substitutions`
             Token::PlusEqual,
             Token::MinusEqual,
             Token::MultiplyEqual,
-            Token::DivisionEqual,
+            Token::DivideEqual,
             Token::RemainderEqual,
             Token::Arrow,
             Token::ExponentiationEqual,
@@ -1520,7 +1520,7 @@ var { ]
         let mut lexer = Lexer::new(input);
 
         let original_token = lexer.next_token();
-        assert_eq!(original_token, Token::Division);
+        assert_eq!(original_token, Token::Divide);
 
         let regex_token = lexer.read_regex(original_token);
 
@@ -1539,7 +1539,7 @@ var { ]
         assert_eq!(lexer.next_token(), Token::Semicolon);
 
         let original_token = lexer.next_token();
-        assert_eq!(original_token, Token::DivisionEqual);
+        assert_eq!(original_token, Token::DivideEqual);
 
         let regex_token = lexer.read_regex(original_token);
 

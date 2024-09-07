@@ -1,4 +1,4 @@
-use crate::lexer::RegularExpressionFlags;
+use crate::lexer::{token::Token, RegularExpressionFlags};
 
 #[derive(Debug, Default)]
 pub struct Program {
@@ -82,6 +82,7 @@ pub struct Identifier {
 #[derive(Debug, PartialEq)]
 pub enum Expression {
     Literal(Literal),
+    BinaryExpression(Box<BinaryExpression>),
 }
 
 /// https://github.com/estree/estree/blob/master/es5.md#literal
@@ -143,4 +144,71 @@ pub struct BlockStatement {
 pub struct LabeledStatement {
     pub label: Identifier,
     pub body: Statement,
+}
+
+/// https://github.com/estree/estree/blob/master/es5.md#binaryexpression
+#[derive(Debug, PartialEq)]
+pub struct BinaryExpression {
+    pub left: Expression,
+    pub right: Expression,
+    pub operator: BinaryOperator,
+}
+
+/// https://github.com/estree/estree/blob/master/es5.md#binaryoperator
+#[derive(Debug, PartialEq)]
+pub enum BinaryOperator {
+    /// `==`
+    DoubleEqual,
+    /// `!=`
+    NotDoubleEqual,
+    /// `===`
+    TripleEqual,
+    /// `!==`
+    NotTripleEqual,
+    /// `<`
+    LessThan,
+    /// `<=`
+    LessThanEqual,
+    /// `>`
+    GreaterThan,
+    /// `>=`
+    GreaterThanEqual,
+    /// `<<`
+    LeftShift,
+    /// `>>`
+    RightShift,
+    /// `>>>`
+    UnsignedRightShift,
+    /// `+`
+    Plus,
+    /// `-`
+    Minus,
+    /// `*`
+    Multiply,
+    /// `/`
+    Divide,
+    /// `%`
+    Percent,
+    /// `|`
+    BitwiseOr,
+    /// `^`
+    BitwiseXor,
+    /// `&`
+    BitwiseAnd,
+    /// `in`
+    In,
+    /// `instanceof`
+    Instanceof,
+}
+
+impl From<&Token> for BinaryOperator {
+    fn from(token: &Token) -> Self {
+        match token {
+            Token::Plus => BinaryOperator::Plus,
+            Token::Minus => BinaryOperator::Minus,
+            Token::Multiply => BinaryOperator::Multiply,
+            Token::Divide => BinaryOperator::Divide,
+            _ => unreachable!("this function should only be called with tokens that can be mapped to a binary operation"),
+        }
+    }
 }

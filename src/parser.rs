@@ -1,11 +1,12 @@
 use crate::{
     ast::{
-        BlockStatement, BooleanLiteral, BreakStatement, ContinueStatement, Declaration, Expression,
-        Identifier, LabeledStatement, Literal, NumberLiteral, Pattern, Program, RegExp,
-        RegExpLiteral, Statement, StringLiteral, VariableDeclaration, VariableDeclarationKind,
-        VariableDeclarator,
+        BinaryExpression, BinaryOperator, BlockStatement, BooleanLiteral, BreakStatement,
+        ContinueStatement, Declaration, Expression, Identifier, LabeledStatement, Literal,
+        NumberLiteral, Pattern, Program, RegExp, RegExpLiteral, Statement, StringLiteral,
+        VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
     },
     lexer::{token::Token, Lexer},
+    precedence::Precedence,
 };
 
 pub struct Parser<'src> {
@@ -127,17 +128,38 @@ impl<'src> Parser<'src> {
     ///
     /// this function handles the ECMAScript version (which includes the estree version as a subset)
     fn parse_assignment_expression(&mut self) -> ParseResult<Expression> {
-        self.parse_conditional_expression()
+        self.parse_binary_expression(Precedence::Comma)
     }
 
-    /// https://tc39.es/ecma262/#prod-ConditionalExpression
-    fn parse_conditional_expression(&mut self) -> ParseResult<Expression> {
-        let lhs = self.parse_prefix_expression()?;
+    fn parse_binary_expression(&mut self, min_precedence: Precedence) -> ParseResult<Expression> {
+        let mut lhs = self.parse_primary_expression()?;
+
+        loop {
+            let Ok(precedence) = Precedence::try_from(&self.current_token) else {
+                break;
+            };
+
+            if precedence < min_precedence {
+                break;
+            }
+
+            let operator = BinaryOperator::from(&self.current_token);
+
+            self.next_token();
+
+            let rhs = self.parse_binary_expression(precedence)?;
+
+            lhs = Expression::BinaryExpression(Box::new(BinaryExpression {
+                left: lhs,
+                right: rhs,
+                operator,
+            }));
+        }
 
         Ok(lhs)
     }
 
-    fn parse_prefix_expression(&mut self) -> ParseResult<Expression> {
+    fn parse_primary_expression(&mut self) -> ParseResult<Expression> {
         let lhs = match &self.current_token {
             Token::String(value) => {
                 Ok(Expression::Literal(Literal::StringLiteral(StringLiteral {
@@ -168,7 +190,7 @@ impl<'src> Parser<'src> {
                     },
                 })))
             }
-            Token::Division | Token::DivisionEqual => self.parse_regular_expression_literal(),
+            Token::Divide | Token::DivideEqual => self.parse_regular_expression_literal(),
             _ => Err(()),
         };
 
@@ -322,9 +344,10 @@ impl<'src> Parser<'src> {
 mod tests {
     use crate::{
         ast::{
-            BlockStatement, BooleanLiteral, BreakStatement, ContinueStatement, Declaration,
-            Expression, Identifier, LabeledStatement, Literal, NumberLiteral, Pattern, Statement,
-            StringLiteral, VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
+            BinaryExpression, BinaryOperator, BlockStatement, BooleanLiteral, BreakStatement,
+            ContinueStatement, Declaration, Expression, Identifier, LabeledStatement, Literal,
+            NumberLiteral, Pattern, Statement, StringLiteral, VariableDeclaration,
+            VariableDeclarationKind, VariableDeclarator,
         },
         lexer::RegularExpressionFlags,
     };
@@ -343,6 +366,10 @@ mod tests {
             var myRegex2 = /=start[a-z]\/with(.*)equals/yu;
             var b, c = 4;
             var hello = "world", bool = false;
+            var sum = 4 + 5;
+            var product = 27 * 8;
+            var precedence = 4 + 27 * 8;
+            var precedence2 = 4 * 27 + 8;
         "#;
 
         let lexer = Lexer::new(input);
@@ -473,7 +500,87 @@ mod tests {
                             )))
                         }
                     ]
-                }))
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "sum".to_string()
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                value: 4.0
+                            })),
+                            right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                value: 5.0
+                            })),
+                            operator: BinaryOperator::Plus
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "product".to_string()
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                value: 27.0
+                            })),
+                            right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                value: 8.0
+                            })),
+                            operator: BinaryOperator::Multiply
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "precedence".to_string()
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                value: 4.0
+                            })),
+                            right: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 27.0
+                                })),
+                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 8.0
+                                })),
+                                operator: BinaryOperator::Multiply
+                            })),
+                            operator: BinaryOperator::Plus
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "precedence2".to_string()
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 4.0
+                                })),
+                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 27.0
+                                })),
+                                operator: BinaryOperator::Multiply
+                            })),
+                            right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                value: 8.0
+                            })),
+                            operator: BinaryOperator::Plus
+                        })))
+                    }]
+                })),
             ]
         );
     }

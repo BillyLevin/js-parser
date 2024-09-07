@@ -102,7 +102,7 @@ pub enum Token {
     Plus,                    // `+`
     Minus,                   // `-`
     Multiply,                // `*`
-    Division,                // `/`
+    Divide,                  // `/`
     Percent,                 // `%`
     Exponentiation,          // `**`
     PlusPlus,                // `++`
@@ -124,7 +124,7 @@ pub enum Token {
     PlusEqual,               // `+=`
     MinusEqual,              // `-=`
     MultiplyEqual,           // `*=`
-    DivisionEqual,           // `/=`
+    DivideEqual,             // `/=`
     RemainderEqual,          // `%=`
     ExponentiationEqual,     // `**=`
     LeftShiftEqual,          // `<<=`
@@ -246,7 +246,7 @@ impl Display for Token {
             Token::Plus => write!(f, "+"),
             Token::Minus => write!(f, "-"),
             Token::Multiply => write!(f, "*"),
-            Token::Division => write!(f, "/"),
+            Token::Divide => write!(f, "/"),
             Token::Percent => write!(f, "%"),
             Token::Exponentiation => write!(f, "**"),
             Token::PlusPlus => write!(f, "++"),
@@ -268,7 +268,7 @@ impl Display for Token {
             Token::PlusEqual => write!(f, "+="),
             Token::MinusEqual => write!(f, "-="),
             Token::MultiplyEqual => write!(f, "*="),
-            Token::DivisionEqual => write!(f, "/="),
+            Token::DivideEqual => write!(f, "/="),
             Token::RemainderEqual => write!(f, "%="),
             Token::ExponentiationEqual => write!(f, "**="),
             Token::LeftShiftEqual => write!(f, "<<="),
