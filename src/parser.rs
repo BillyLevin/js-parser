@@ -139,7 +139,7 @@ impl<'src> Parser<'src> {
                 break;
             };
 
-            if precedence < min_precedence {
+            if precedence <= min_precedence {
                 break;
             }
 
@@ -370,6 +370,7 @@ mod tests {
             var product = 27 * 8;
             var precedence = 4 + 27 * 8;
             var precedence2 = 4 * 27 + 8;
+            var lotsOfOperations = 4 * 27 / 45 + 4 - 7.5 * 2 + 67.45 / 3;
         "#;
 
         let lexer = Lexer::new(input);
@@ -581,6 +582,67 @@ mod tests {
                         })))
                     }]
                 })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "lotsOfOperations".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                left: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                    left: Expression::BinaryExpression(Box::new(
+                                        BinaryExpression {
+                                            left: Expression::BinaryExpression(Box::new(
+                                                BinaryExpression {
+                                                    left: Expression::Literal(
+                                                        Literal::NumberLiteral(NumberLiteral {
+                                                            value: 4.0
+                                                        })
+                                                    ),
+                                                    right: Expression::Literal(
+                                                        Literal::NumberLiteral(NumberLiteral {
+                                                            value: 27.0
+                                                        })
+                                                    ),
+                                                    operator: BinaryOperator::Multiply
+                                                }
+                                            )),
+                                            right: Expression::Literal(Literal::NumberLiteral(
+                                                NumberLiteral { value: 45.0 }
+                                            )),
+                                            operator: BinaryOperator::Divide
+                                        }
+                                    )),
+                                    right: Expression::Literal(Literal::NumberLiteral(
+                                        NumberLiteral { value: 4.0 }
+                                    )),
+                                    operator: BinaryOperator::Plus
+                                })),
+                                right: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                    left: Expression::Literal(Literal::NumberLiteral(
+                                        NumberLiteral { value: 7.5 }
+                                    )),
+                                    right: Expression::Literal(Literal::NumberLiteral(
+                                        NumberLiteral { value: 2.0 }
+                                    )),
+                                    operator: BinaryOperator::Multiply
+                                })),
+                                operator: BinaryOperator::Minus
+                            })),
+                            right: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 67.45
+                                })),
+                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 3.0
+                                })),
+                                operator: BinaryOperator::Divide
+                            })),
+                            operator: BinaryOperator::Plus
+                        })))
+                    }]
+                }))
             ]
         );
     }
