@@ -406,6 +406,14 @@ mod tests {
             var greaterThanEqual2 = 34 + 7 >= 2;
             var inOperator = "property" in y;
             var instanceofOperator = x instanceof y;
+            var doubleEquals = x == 4;
+            var doubleEquals2 = "hello" == false;
+            var notDoubleEquals = 4 != x;
+            var notDoubleEquals2 = false != "hello";
+            var tripleEquals = x === 4;
+            var tripleEquals2 = "hello" === false;
+            var notTripleEquals = 4 !== x;
+            var notTripleEquals2 = false !== "hello";
         "#;
 
         let lexer = Lexer::new(input);
@@ -1135,6 +1143,146 @@ mod tests {
                                 name: "y".to_string()
                             }),
                             operator: BinaryOperator::Instanceof
+                        })))
+                    }]
+                })),
+                // var tripleEquals = x === 4;
+                // var tripleEquals2 = "hello" === false;
+                // var notTripleEquals = 4 !== x;
+                // var notTripleEquals2 = false !== "hello";
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "doubleEquals".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::Identifier(Identifier {
+                                name: "x".to_string()
+                            }),
+                            right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                value: 4.0
+                            })),
+                            operator: BinaryOperator::DoubleEqual
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "doubleEquals2".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::Literal(Literal::StringLiteral(StringLiteral {
+                                value: "hello".to_string()
+                            })),
+                            right: Expression::Literal(Literal::BooleanLiteral(BooleanLiteral {
+                                value: false
+                            })),
+                            operator: BinaryOperator::DoubleEqual
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "notDoubleEquals".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                value: 4.0
+                            })),
+                            right: Expression::Identifier(Identifier {
+                                name: "x".to_string()
+                            }),
+                            operator: BinaryOperator::NotDoubleEqual
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "notDoubleEquals2".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::Literal(Literal::BooleanLiteral(BooleanLiteral {
+                                value: false
+                            })),
+                            right: Expression::Literal(Literal::StringLiteral(StringLiteral {
+                                value: "hello".to_string()
+                            })),
+                            operator: BinaryOperator::NotDoubleEqual
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "tripleEquals".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::Identifier(Identifier {
+                                name: "x".to_string()
+                            }),
+                            right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                value: 4.0
+                            })),
+                            operator: BinaryOperator::TripleEqual
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "tripleEquals2".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::Literal(Literal::StringLiteral(StringLiteral {
+                                value: "hello".to_string()
+                            })),
+                            right: Expression::Literal(Literal::BooleanLiteral(BooleanLiteral {
+                                value: false
+                            })),
+                            operator: BinaryOperator::TripleEqual
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "notTripleEquals".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                value: 4.0
+                            })),
+                            right: Expression::Identifier(Identifier {
+                                name: "x".to_string()
+                            }),
+                            operator: BinaryOperator::NotTripleEqual
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "notTripleEquals2".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::Literal(Literal::BooleanLiteral(BooleanLiteral {
+                                value: false
+                            })),
+                            right: Expression::Literal(Literal::StringLiteral(StringLiteral {
+                                value: "hello".to_string()
+                            })),
+                            operator: BinaryOperator::NotTripleEqual
                         })))
                     }]
                 })),

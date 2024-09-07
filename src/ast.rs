@@ -222,6 +222,10 @@ impl From<&Token> for BinaryOperator {
             Token::GreaterThanEqual => BinaryOperator::GreaterThanEqual, 
             Token::In => BinaryOperator::In, 
             Token::Instanceof => BinaryOperator::Instanceof, 
+            Token::DoubleEqual => BinaryOperator::DoubleEqual, 
+            Token::NotDoubleEqual => BinaryOperator::NotDoubleEqual, 
+            Token::TripleEqual => BinaryOperator::TripleEqual, 
+            Token::NotTripleEqual => BinaryOperator::NotTripleEqual, 
             _ => unreachable!("this function should only be called with tokens that can be mapped to a binary operation"),
         }
     }
