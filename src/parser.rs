@@ -377,6 +377,8 @@ mod tests {
             var lotsOfOperations = 4 * 27 / 45 + 4 - 7.5 * 2 + 67.45 / 3;
             var exp = 4 ** 3 ** 2 + 34 * 4;
             var exp2 = 45 * 7 ** 3;
+            var remainder = 45 % 5 + 3;
+            var remainder2 = 45 + 5 % 3;
         "#;
 
         let lexer = Lexer::new(input);
@@ -704,6 +706,52 @@ mod tests {
                                 operator: BinaryOperator::Exponentiation,
                             })),
                             operator: BinaryOperator::Multiply
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "remainder".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 45.0
+                                })),
+                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 5.0
+                                })),
+                                operator: BinaryOperator::Remainder,
+                            })),
+                            right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                value: 3.0
+                            })),
+                            operator: BinaryOperator::Plus
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "remainder2".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                value: 45.0
+                            })),
+                            right: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 5.0
+                                })),
+                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 3.0
+                                })),
+                                operator: BinaryOperator::Remainder,
+                            })),
+                            operator: BinaryOperator::Plus
                         })))
                     }]
                 })),

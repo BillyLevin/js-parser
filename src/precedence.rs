@@ -35,7 +35,7 @@ impl TryFrom<&Token> for Precedence {
     fn try_from(token: &Token) -> Result<Self, Self::Error> {
         match token {
             Token::Plus | Token::Minus => Ok(Precedence::Addition),
-            Token::Multiply | Token::Divide => Ok(Precedence::Multiplication),
+            Token::Multiply | Token::Divide | Token::Percent => Ok(Precedence::Multiplication),
             Token::Exponentiation => Ok(Precedence::Exponentiation),
             _ => Err(()),
         }

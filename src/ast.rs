@@ -188,7 +188,7 @@ pub enum BinaryOperator {
     /// `/`
     Divide,
     /// `%`
-    Percent,
+    Remainder,
     /// `|`
     BitwiseOr,
     /// `^`
@@ -211,6 +211,7 @@ impl From<&Token> for BinaryOperator {
             Token::Multiply => BinaryOperator::Multiply,
             Token::Divide => BinaryOperator::Divide,
             Token::Exponentiation => BinaryOperator::Exponentiation,
+            Token::Percent => BinaryOperator::Remainder,
             _ => unreachable!("this function should only be called with tokens that can be mapped to a binary operation"),
         }
     }
