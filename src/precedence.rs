@@ -40,6 +40,12 @@ impl TryFrom<&Token> for Precedence {
             Token::LeftShift | Token::RightShift | Token::UnsignedRightShift => {
                 Ok(Precedence::BitwiseShift)
             }
+            Token::LessThan
+            | Token::LessThanEqual
+            | Token::GreaterThan
+            | Token::GreaterThanEqual
+            | Token::In
+            | Token::Instanceof => Ok(Precedence::Relational),
             _ => Err(()),
         }
     }

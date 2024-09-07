@@ -83,6 +83,7 @@ pub struct Identifier {
 pub enum Expression {
     Literal(Literal),
     BinaryExpression(Box<BinaryExpression>),
+    Identifier(Identifier),
 }
 
 /// https://github.com/estree/estree/blob/master/es5.md#literal
@@ -215,6 +216,12 @@ impl From<&Token> for BinaryOperator {
             Token::LeftShift => BinaryOperator::LeftShift,
             Token::RightShift => BinaryOperator::RightShift,
             Token::UnsignedRightShift => BinaryOperator::UnsignedRightShift,
+            Token::LessThan => BinaryOperator::LessThan, 
+            Token::LessThanEqual => BinaryOperator::LessThanEqual, 
+            Token::GreaterThan => BinaryOperator::GreaterThan, 
+            Token::GreaterThanEqual => BinaryOperator::GreaterThanEqual, 
+            Token::In => BinaryOperator::In, 
+            Token::Instanceof => BinaryOperator::Instanceof, 
             _ => unreachable!("this function should only be called with tokens that can be mapped to a binary operation"),
         }
     }

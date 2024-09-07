@@ -195,12 +195,23 @@ impl<'src> Parser<'src> {
                 })))
             }
             Token::Divide | Token::DivideEqual => self.parse_regular_expression_literal(),
+            Token::Identifier(_) => self.parse_identifier_expression(),
             _ => Err(()),
         };
 
         self.next_token();
 
         lhs
+    }
+
+    fn parse_identifier_expression(&self) -> ParseResult<Expression> {
+        let Token::Identifier(ref identifier) = self.current_token else {
+            return Err(());
+        };
+
+        Ok(Expression::Identifier(Identifier {
+            name: identifier.to_string(),
+        }))
     }
 
     fn parse_debugger_statement(&mut self) -> ParseResult<Statement> {
@@ -385,6 +396,16 @@ mod tests {
             var rightShift2 = 45 * 5 >> 3;
             var unsignedRightShift = 45 >>> 5 * 3;
             var unsignedRightShift2 = 45 * 5 >>> 3;
+            var lessThan = 34 < 7 + 2;
+            var lessThan2 = 34 + 7 < 2;
+            var lessThanEqual = 34 <= 7 + 2;
+            var lessThanEqual2 = 34 + 7 <= 2;
+            var greaterThan = 34 > 7 + 2;
+            var greaterThan2 = 34 + 7 > 2;
+            var greaterThanEqual = 34 >= 7 + 2;
+            var greaterThanEqual2 = 34 + 7 >= 2;
+            var inOperator = "property" in y;
+            var instanceofOperator = x instanceof y;
         "#;
 
         let lexer = Lexer::new(input);
@@ -896,6 +917,224 @@ mod tests {
                                 value: 3.0
                             })),
                             operator: BinaryOperator::UnsignedRightShift
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "lessThan".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                value: 34.0
+                            })),
+                            right: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 7.0
+                                })),
+                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 2.0
+                                })),
+                                operator: BinaryOperator::Plus,
+                            })),
+                            operator: BinaryOperator::LessThan
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "lessThan2".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 34.0
+                                })),
+                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 7.0
+                                })),
+                                operator: BinaryOperator::Plus,
+                            })),
+                            right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                value: 2.0
+                            })),
+                            operator: BinaryOperator::LessThan
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "lessThanEqual".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                value: 34.0
+                            })),
+                            right: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 7.0
+                                })),
+                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 2.0
+                                })),
+                                operator: BinaryOperator::Plus,
+                            })),
+                            operator: BinaryOperator::LessThanEqual
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "lessThanEqual2".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 34.0
+                                })),
+                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 7.0
+                                })),
+                                operator: BinaryOperator::Plus,
+                            })),
+                            right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                value: 2.0
+                            })),
+                            operator: BinaryOperator::LessThanEqual
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "greaterThan".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                value: 34.0
+                            })),
+                            right: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 7.0
+                                })),
+                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 2.0
+                                })),
+                                operator: BinaryOperator::Plus,
+                            })),
+                            operator: BinaryOperator::GreaterThan
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "greaterThan2".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 34.0
+                                })),
+                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 7.0
+                                })),
+                                operator: BinaryOperator::Plus,
+                            })),
+                            right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                value: 2.0
+                            })),
+                            operator: BinaryOperator::GreaterThan
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "greaterThanEqual".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                value: 34.0
+                            })),
+                            right: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 7.0
+                                })),
+                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 2.0
+                                })),
+                                operator: BinaryOperator::Plus,
+                            })),
+                            operator: BinaryOperator::GreaterThanEqual
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "greaterThanEqual2".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 34.0
+                                })),
+                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 7.0
+                                })),
+                                operator: BinaryOperator::Plus,
+                            })),
+                            right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                value: 2.0
+                            })),
+                            operator: BinaryOperator::GreaterThanEqual
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "inOperator".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::Literal(Literal::StringLiteral(StringLiteral {
+                                value: "property".to_string(),
+                            })),
+                            right: Expression::Identifier(Identifier {
+                                name: "y".to_string()
+                            }),
+                            operator: BinaryOperator::In
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "instanceofOperator".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::Identifier(Identifier {
+                                name: "x".to_string()
+                            }),
+                            right: Expression::Identifier(Identifier {
+                                name: "y".to_string()
+                            }),
+                            operator: BinaryOperator::Instanceof
                         })))
                     }]
                 })),
