@@ -83,6 +83,7 @@ pub struct Identifier {
 pub enum Expression {
     Literal(Literal),
     BinaryExpression(Box<BinaryExpression>),
+    LogicalExpression(Box<LogicalExpression>),
     Identifier(Identifier),
 }
 
@@ -232,4 +233,40 @@ impl From<&Token> for BinaryOperator {
             _ => unreachable!("this function should only be called with tokens that can be mapped to a binary operation"),
         }
     }
+}
+
+/// https://github.com/estree/estree/blob/master/es5.md#logicalexpression
+#[derive(Debug, PartialEq)]
+pub struct LogicalExpression {
+    pub left: Expression,
+    pub right: Expression,
+    pub operator: LogicalOperator,
+}
+
+/// https://github.com/estree/estree/blob/master/es5.md#binaryoperator
+#[derive(Debug, PartialEq)]
+pub enum LogicalOperator {
+    /// `&&`
+    And,
+    /// `||`
+    Or,
+    /// `??`
+    NullishCoalescing,
+}
+/// https://github.com/estree/estree/blob/master/es5.md#logicaloperator
+impl From<&Token> for LogicalOperator {
+    fn from(token: &Token) -> Self {
+        match token {
+            Token::LogicalAnd => LogicalOperator::And,
+            Token::LogicalOr => LogicalOperator::Or,
+            Token::NullishCoalescing => LogicalOperator::NullishCoalescing,
+            _ => unreachable!("this function should only be called with tokens that can be mapped to a logical operation"),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Operator {
+    Binary(BinaryOperator),
+    Logical(LogicalOperator),
 }

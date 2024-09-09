@@ -2,8 +2,9 @@ use crate::{
     ast::{
         BinaryExpression, BinaryOperator, BlockStatement, BooleanLiteral, BreakStatement,
         ContinueStatement, Declaration, Expression, Identifier, LabeledStatement, Literal,
-        NumberLiteral, Pattern, Program, RegExp, RegExpLiteral, Statement, StringLiteral,
-        VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
+        LogicalExpression, LogicalOperator, NumberLiteral, Operator, Pattern, Program, RegExp,
+        RegExpLiteral, Statement, StringLiteral, VariableDeclaration, VariableDeclarationKind,
+        VariableDeclarator,
     },
     lexer::{token::Token, Lexer},
     precedence::Precedence,
@@ -147,17 +148,30 @@ impl<'src> Parser<'src> {
                 break;
             }
 
-            let operator = BinaryOperator::from(&self.current_token);
+            let operator = if self.current_token.is_logical_operator() {
+                Operator::Logical(LogicalOperator::from(&self.current_token))
+            } else {
+                Operator::Binary(BinaryOperator::from(&self.current_token))
+            };
 
             self.next_token();
 
             let rhs = self.parse_binary_expression(precedence)?;
 
-            lhs = Expression::BinaryExpression(Box::new(BinaryExpression {
-                left: lhs,
-                right: rhs,
-                operator,
-            }));
+            lhs = match operator {
+                Operator::Binary(op) => Expression::BinaryExpression(Box::new(BinaryExpression {
+                    left: lhs,
+                    right: rhs,
+                    operator: op,
+                })),
+                Operator::Logical(op) => {
+                    Expression::LogicalExpression(Box::new(LogicalExpression {
+                        left: lhs,
+                        right: rhs,
+                        operator: op,
+                    }))
+                }
+            };
         }
 
         Ok(lhs)
@@ -361,8 +375,8 @@ mod tests {
         ast::{
             BinaryExpression, BinaryOperator, BlockStatement, BooleanLiteral, BreakStatement,
             ContinueStatement, Declaration, Expression, Identifier, LabeledStatement, Literal,
-            NumberLiteral, Pattern, Statement, StringLiteral, VariableDeclaration,
-            VariableDeclarationKind, VariableDeclarator,
+            LogicalExpression, LogicalOperator, NumberLiteral, Pattern, Statement, StringLiteral,
+            VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
         },
         lexer::RegularExpressionFlags,
     };
@@ -415,6 +429,9 @@ mod tests {
             var notTripleEquals = 4 !== x;
             var notTripleEquals2 = false !== "hello";
             var bitwise = 45 ^ 3 & 23 | 14 + 7;
+            var logical = true === false && 4 > 5 || 3;
+            var logical2 = true || false > 4 && 5 === 3;
+            var logical3 = thing ?? "fallback";
         "#;
 
         let lexer = Lexer::new(input);
@@ -1319,6 +1336,93 @@ mod tests {
                                 operator: BinaryOperator::Plus
                             })),
                             operator: BinaryOperator::BitwiseOr
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "logical".to_string()
+                        }),
+                        init: Some(Expression::LogicalExpression(Box::new(LogicalExpression {
+                            left: Expression::LogicalExpression(Box::new(LogicalExpression {
+                                left: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                    left: Expression::Literal(Literal::BooleanLiteral(
+                                        BooleanLiteral { value: true }
+                                    )),
+                                    right: Expression::Literal(Literal::BooleanLiteral(
+                                        BooleanLiteral { value: false }
+                                    )),
+                                    operator: BinaryOperator::TripleEqual
+                                })),
+                                right: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                    left: Expression::Literal(Literal::NumberLiteral(
+                                        NumberLiteral { value: 4.0 }
+                                    )),
+                                    right: Expression::Literal(Literal::NumberLiteral(
+                                        NumberLiteral { value: 5.0 }
+                                    )),
+                                    operator: BinaryOperator::GreaterThan
+                                })),
+                                operator: LogicalOperator::And
+                            })),
+                            right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                value: 3.0
+                            })),
+                            operator: LogicalOperator::Or
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "logical2".to_string()
+                        }),
+                        init: Some(Expression::LogicalExpression(Box::new(LogicalExpression {
+                            left: Expression::Literal(Literal::BooleanLiteral(BooleanLiteral {
+                                value: true
+                            })),
+                            right: Expression::LogicalExpression(Box::new(LogicalExpression {
+                                left: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                    left: Expression::Literal(Literal::BooleanLiteral(
+                                        BooleanLiteral { value: false }
+                                    )),
+                                    right: Expression::Literal(Literal::NumberLiteral(
+                                        NumberLiteral { value: 4.0 }
+                                    )),
+                                    operator: BinaryOperator::GreaterThan
+                                })),
+                                right: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                    left: Expression::Literal(Literal::NumberLiteral(
+                                        NumberLiteral { value: 5.0 }
+                                    )),
+                                    right: Expression::Literal(Literal::NumberLiteral(
+                                        NumberLiteral { value: 3.0 }
+                                    )),
+                                    operator: BinaryOperator::TripleEqual
+                                })),
+                                operator: LogicalOperator::And
+                            })),
+                            operator: LogicalOperator::Or
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "logical3".to_string()
+                        }),
+                        init: Some(Expression::LogicalExpression(Box::new(LogicalExpression {
+                            left: Expression::Identifier(Identifier {
+                                name: "thing".to_string()
+                            }),
+                            right: Expression::Literal(Literal::StringLiteral(StringLiteral {
+                                value: "fallback".to_string()
+                            })),
+                            operator: LogicalOperator::NullishCoalescing
                         })))
                     }]
                 })),

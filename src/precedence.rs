@@ -58,6 +58,9 @@ impl TryFrom<&Token> for Precedence {
             Token::BitwiseAnd => Ok(Precedence::BitwiseAnd),
             Token::BitwiseXor => Ok(Precedence::BitwiseXor),
             Token::BitwiseOr => Ok(Precedence::BitwiseOr),
+            Token::LogicalAnd => Ok(Precedence::LogicalAnd),
+            Token::LogicalOr => Ok(Precedence::LogicalOr),
+            Token::NullishCoalescing => Ok(Precedence::LogicalOr),
             _ => Err(()),
         }
     }

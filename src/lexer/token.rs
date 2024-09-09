@@ -295,3 +295,12 @@ impl Display for Token {
         }
     }
 }
+
+impl Token {
+    pub fn is_logical_operator(&self) -> bool {
+        matches!(
+            self,
+            Token::LogicalAnd | Token::LogicalOr | Token::NullishCoalescing
+        )
+    }
+}
