@@ -303,4 +303,22 @@ impl Token {
             Token::LogicalAnd | Token::LogicalOr | Token::NullishCoalescing
         )
     }
+
+    pub fn is_assignment_operator(&self) -> bool {
+        matches!(
+            self,
+            Token::Equal
+                | Token::PlusEqual
+                | Token::MinusEqual
+                | Token::MultiplyEqual
+                | Token::DivideEqual
+                | Token::RemainderEqual
+                | Token::LeftShiftEqual
+                | Token::RightShiftEqual
+                | Token::UnsignedRightShiftEqual
+                | Token::BitwiseOrEqual
+                | Token::BitwiseXorEqual
+                | Token::BitwiseAndEqual
+        )
+    }
 }

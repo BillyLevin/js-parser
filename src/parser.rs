@@ -1,10 +1,10 @@
 use crate::{
     ast::{
-        BinaryExpression, BinaryOperator, BlockStatement, BooleanLiteral, BreakStatement,
-        ContinueStatement, Declaration, Expression, Identifier, LabeledStatement, Literal,
-        LogicalExpression, LogicalOperator, NumberLiteral, Operator, Pattern, Program, RegExp,
-        RegExpLiteral, Statement, StringLiteral, VariableDeclaration, VariableDeclarationKind,
-        VariableDeclarator,
+        AssignmentExpression, AssignmentOperator, BinaryExpression, BinaryOperator, BlockStatement,
+        BooleanLiteral, BreakStatement, ContinueStatement, Declaration, Expression, Identifier,
+        LabeledStatement, Literal, LogicalExpression, LogicalOperator, NumberLiteral, Operator,
+        Pattern, Program, RegExp, RegExpLiteral, Statement, StringLiteral, VariableDeclaration,
+        VariableDeclarationKind, VariableDeclarator,
     },
     lexer::{token::Token, Lexer},
     precedence::Precedence,
@@ -150,6 +150,8 @@ impl<'src> Parser<'src> {
 
             let operator = if self.current_token.is_logical_operator() {
                 Operator::Logical(LogicalOperator::from(&self.current_token))
+            } else if self.current_token.is_assignment_operator() {
+                Operator::Assignment(AssignmentOperator::from(&self.current_token))
             } else {
                 Operator::Binary(BinaryOperator::from(&self.current_token))
             };
@@ -166,6 +168,13 @@ impl<'src> Parser<'src> {
                 })),
                 Operator::Logical(op) => {
                     Expression::LogicalExpression(Box::new(LogicalExpression {
+                        left: lhs,
+                        right: rhs,
+                        operator: op,
+                    }))
+                }
+                Operator::Assignment(op) => {
+                    Expression::AssignmentExpression(Box::new(AssignmentExpression {
                         left: lhs,
                         right: rhs,
                         operator: op,
@@ -373,10 +382,11 @@ impl<'src> Parser<'src> {
 mod tests {
     use crate::{
         ast::{
-            BinaryExpression, BinaryOperator, BlockStatement, BooleanLiteral, BreakStatement,
-            ContinueStatement, Declaration, Expression, Identifier, LabeledStatement, Literal,
-            LogicalExpression, LogicalOperator, NumberLiteral, Pattern, Statement, StringLiteral,
-            VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
+            AssignmentExpression, AssignmentOperator, BinaryExpression, BinaryOperator,
+            BlockStatement, BooleanLiteral, BreakStatement, ContinueStatement, Declaration,
+            Expression, Identifier, LabeledStatement, Literal, LogicalExpression, LogicalOperator,
+            NumberLiteral, Pattern, Statement, StringLiteral, VariableDeclaration,
+            VariableDeclarationKind, VariableDeclarator,
         },
         lexer::RegularExpressionFlags,
     };
@@ -432,6 +442,7 @@ mod tests {
             var logical = true === false && 4 > 5 || 3;
             var logical2 = true || false > 4 && 5 === 3;
             var logical3 = thing ?? "fallback";
+            var a = b = 4 > 5;
         "#;
 
         let lexer = Lexer::new(input);
@@ -1426,6 +1437,31 @@ mod tests {
                         })))
                     }]
                 })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "a".to_string()
+                        }),
+                        init: Some(Expression::AssignmentExpression(Box::new(
+                            AssignmentExpression {
+                                left: Expression::Identifier(Identifier {
+                                    name: "b".to_string()
+                                }),
+                                right: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                    left: Expression::Literal(Literal::NumberLiteral(
+                                        NumberLiteral { value: 4.0 }
+                                    )),
+                                    right: Expression::Literal(Literal::NumberLiteral(
+                                        NumberLiteral { value: 5.0 }
+                                    )),
+                                    operator: BinaryOperator::GreaterThan
+                                })),
+                                operator: AssignmentOperator::Assign
+                            }
+                        )))
+                    }]
+                }))
             ]
         );
     }

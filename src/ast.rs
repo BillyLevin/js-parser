@@ -84,6 +84,7 @@ pub enum Expression {
     Literal(Literal),
     BinaryExpression(Box<BinaryExpression>),
     LogicalExpression(Box<LogicalExpression>),
+    AssignmentExpression(Box<AssignmentExpression>),
     Identifier(Identifier),
 }
 
@@ -146,6 +147,13 @@ pub struct BlockStatement {
 pub struct LabeledStatement {
     pub label: Identifier,
     pub body: Statement,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Operator {
+    Binary(BinaryOperator),
+    Logical(LogicalOperator),
+    Assignment(AssignmentOperator),
 }
 
 /// https://github.com/estree/estree/blob/master/es5.md#binaryexpression
@@ -243,7 +251,7 @@ pub struct LogicalExpression {
     pub operator: LogicalOperator,
 }
 
-/// https://github.com/estree/estree/blob/master/es5.md#binaryoperator
+/// https://github.com/estree/estree/blob/master/es5.md#logicaloperator
 #[derive(Debug, PartialEq)]
 pub enum LogicalOperator {
     /// `&&`
@@ -253,7 +261,7 @@ pub enum LogicalOperator {
     /// `??`
     NullishCoalescing,
 }
-/// https://github.com/estree/estree/blob/master/es5.md#logicaloperator
+
 impl From<&Token> for LogicalOperator {
     fn from(token: &Token) -> Self {
         match token {
@@ -265,8 +273,59 @@ impl From<&Token> for LogicalOperator {
     }
 }
 
+/// https://github.com/estree/estree/blob/master/es5.md#assignmentexpression
 #[derive(Debug, PartialEq)]
-pub enum Operator {
-    Binary(BinaryOperator),
-    Logical(LogicalOperator),
+pub struct AssignmentExpression {
+    pub left: Expression,
+    pub right: Expression,
+    pub operator: AssignmentOperator,
+}
+
+/// https://github.com/estree/estree/blob/master/es5.md#assignmentoperator
+#[derive(Debug, PartialEq)]
+pub enum AssignmentOperator {
+    /// `=`
+    Assign,
+    /// `+=`
+    Plus,
+    /// `-=`
+    Minus,
+    /// `*=`
+    Multiply,
+    /// `/=`
+    Divide,
+    /// `%=`
+    Remainder,
+    /// `<<=`
+    LeftShift,
+    /// `>>=`
+    RightShift,
+    /// `>>>=`
+    UnsignedRightShift,
+    /// `|=`
+    BitwiseOr,
+    /// `^=`
+    BitwiseXor,
+    /// `&=`
+    BitwiseAnd,
+}
+
+impl From<&Token> for AssignmentOperator {
+    fn from(token: &Token) -> Self {
+        match token {
+            Token::Equal => AssignmentOperator::Assign,
+            Token::PlusEqual => AssignmentOperator::Plus,
+            Token::MinusEqual => AssignmentOperator::Minus,
+            Token::MultiplyEqual => AssignmentOperator::Multiply,
+            Token::DivideEqual => AssignmentOperator::Divide,
+            Token::RemainderEqual => AssignmentOperator::Remainder,
+            Token::LeftShiftEqual => AssignmentOperator::LeftShift,
+            Token::RightShiftEqual => AssignmentOperator::RightShift,
+            Token::UnsignedRightShiftEqual => AssignmentOperator::UnsignedRightShift,
+            Token::BitwiseOrEqual => AssignmentOperator::BitwiseOr,
+            Token::BitwiseXorEqual => AssignmentOperator::BitwiseXor,
+            Token::BitwiseAndEqual => AssignmentOperator::BitwiseAnd,
+            _ => unreachable!("this function should only be called with tokens that can be mapped to an assignment operation"),
+        }
+    }
 }

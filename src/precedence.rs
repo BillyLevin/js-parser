@@ -61,6 +61,9 @@ impl TryFrom<&Token> for Precedence {
             Token::LogicalAnd => Ok(Precedence::LogicalAnd),
             Token::LogicalOr => Ok(Precedence::LogicalOr),
             Token::NullishCoalescing => Ok(Precedence::LogicalOr),
+
+            t if t.is_assignment_operator() => Ok(Precedence::Assignment),
+
             _ => Err(()),
         }
     }
