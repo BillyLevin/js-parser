@@ -414,6 +414,7 @@ mod tests {
             var tripleEquals2 = "hello" === false;
             var notTripleEquals = 4 !== x;
             var notTripleEquals2 = false !== "hello";
+            var bitwise = 45 ^ 3 & 23 | 14 + 7;
         "#;
 
         let lexer = Lexer::new(input);
@@ -1283,6 +1284,41 @@ mod tests {
                                 value: "hello".to_string()
                             })),
                             operator: BinaryOperator::NotTripleEqual
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "bitwise".to_string(),
+                        }),
+                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
+                            left: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 45.0
+                                })),
+                                right: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                    left: Expression::Literal(Literal::NumberLiteral(
+                                        NumberLiteral { value: 3.0 }
+                                    )),
+                                    right: Expression::Literal(Literal::NumberLiteral(
+                                        NumberLiteral { value: 23.0 }
+                                    )),
+                                    operator: BinaryOperator::BitwiseAnd
+                                })),
+                                operator: BinaryOperator::BitwiseXor
+                            })),
+                            right: Expression::BinaryExpression(Box::new(BinaryExpression {
+                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 14.0
+                                })),
+                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+                                    value: 7.0
+                                })),
+                                operator: BinaryOperator::Plus
+                            })),
+                            operator: BinaryOperator::BitwiseOr
                         })))
                     }]
                 })),

@@ -8,6 +8,7 @@ pub enum Precedence {
     LogicalOr,
     LogicalAnd,
     BitwiseOr,
+    BitwiseXor,
     BitwiseAnd,
     Equality,
     Relational,
@@ -53,6 +54,10 @@ impl TryFrom<&Token> for Precedence {
             | Token::NotDoubleEqual
             | Token::TripleEqual
             | Token::NotTripleEqual => Ok(Precedence::Equality),
+
+            Token::BitwiseAnd => Ok(Precedence::BitwiseAnd),
+            Token::BitwiseXor => Ok(Precedence::BitwiseXor),
+            Token::BitwiseOr => Ok(Precedence::BitwiseOr),
             _ => Err(()),
         }
     }

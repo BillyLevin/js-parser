@@ -226,6 +226,9 @@ impl From<&Token> for BinaryOperator {
             Token::NotDoubleEqual => BinaryOperator::NotDoubleEqual, 
             Token::TripleEqual => BinaryOperator::TripleEqual, 
             Token::NotTripleEqual => BinaryOperator::NotTripleEqual, 
+            Token::BitwiseAnd => BinaryOperator::BitwiseAnd, 
+            Token::BitwiseXor => BinaryOperator::BitwiseXor, 
+            Token::BitwiseOr => BinaryOperator::BitwiseOr, 
             _ => unreachable!("this function should only be called with tokens that can be mapped to a binary operation"),
         }
     }
