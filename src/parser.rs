@@ -443,6 +443,11 @@ mod tests {
             var logical2 = true || false > 4 && 5 === 3;
             var logical3 = thing ?? "fallback";
             var a = b = 4 > 5;
+            var a = b *= c /= 3;
+            var a = b -= c += d *= 4;
+            var a = b %= c %= d;
+            var a = b <<= c >>= d >>>= 27;
+            var a = b |= c &= d ^= 34;
         "#;
 
         let lexer = Lexer::new(input);
@@ -1461,7 +1466,166 @@ mod tests {
                             }
                         )))
                     }]
-                }))
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "a".to_string()
+                        }),
+                        init: Some(Expression::AssignmentExpression(Box::new(
+                            AssignmentExpression {
+                                left: Expression::Identifier(Identifier {
+                                    name: "b".to_string()
+                                }),
+                                right: Expression::AssignmentExpression(Box::new(
+                                    AssignmentExpression {
+                                        left: Expression::Identifier(Identifier {
+                                            name: "c".to_string()
+                                        }),
+                                        right: Expression::Literal(Literal::NumberLiteral(
+                                            NumberLiteral { value: 3.0 }
+                                        )),
+                                        operator: AssignmentOperator::Divide
+                                    }
+                                )),
+                                operator: AssignmentOperator::Multiply
+                            }
+                        )))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "a".to_string()
+                        }),
+                        init: Some(Expression::AssignmentExpression(Box::new(
+                            AssignmentExpression {
+                                left: Expression::Identifier(Identifier {
+                                    name: "b".to_string()
+                                }),
+                                right: Expression::AssignmentExpression(Box::new(
+                                    AssignmentExpression {
+                                        left: Expression::Identifier(Identifier {
+                                            name: "c".to_string()
+                                        }),
+                                        right: Expression::AssignmentExpression(Box::new(
+                                            AssignmentExpression {
+                                                left: Expression::Identifier(Identifier {
+                                                    name: "d".to_string()
+                                                }),
+                                                right: Expression::Literal(Literal::NumberLiteral(
+                                                    NumberLiteral { value: 4.0 }
+                                                )),
+                                                operator: AssignmentOperator::Multiply
+                                            }
+                                        )),
+                                        operator: AssignmentOperator::Plus
+                                    }
+                                )),
+                                operator: AssignmentOperator::Minus
+                            }
+                        )))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "a".to_string()
+                        }),
+                        init: Some(Expression::AssignmentExpression(Box::new(
+                            AssignmentExpression {
+                                left: Expression::Identifier(Identifier {
+                                    name: "b".to_string()
+                                }),
+                                right: Expression::AssignmentExpression(Box::new(
+                                    AssignmentExpression {
+                                        left: Expression::Identifier(Identifier {
+                                            name: "c".to_string()
+                                        }),
+                                        right: Expression::Identifier(Identifier {
+                                            name: "d".to_string()
+                                        }),
+                                        operator: AssignmentOperator::Remainder
+                                    }
+                                )),
+                                operator: AssignmentOperator::Remainder
+                            }
+                        )))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "a".to_string()
+                        }),
+                        init: Some(Expression::AssignmentExpression(Box::new(
+                            AssignmentExpression {
+                                left: Expression::Identifier(Identifier {
+                                    name: "b".to_string()
+                                }),
+                                right: Expression::AssignmentExpression(Box::new(
+                                    AssignmentExpression {
+                                        left: Expression::Identifier(Identifier {
+                                            name: "c".to_string()
+                                        }),
+                                        right: Expression::AssignmentExpression(Box::new(
+                                            AssignmentExpression {
+                                                left: Expression::Identifier(Identifier {
+                                                    name: "d".to_string()
+                                                }),
+                                                right: Expression::Literal(Literal::NumberLiteral(
+                                                    NumberLiteral { value: 27.0 }
+                                                )),
+                                                operator: AssignmentOperator::UnsignedRightShift
+                                            }
+                                        )),
+                                        operator: AssignmentOperator::RightShift
+                                    }
+                                )),
+                                operator: AssignmentOperator::LeftShift
+                            }
+                        )))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "a".to_string()
+                        }),
+                        init: Some(Expression::AssignmentExpression(Box::new(
+                            AssignmentExpression {
+                                left: Expression::Identifier(Identifier {
+                                    name: "b".to_string()
+                                }),
+                                right: Expression::AssignmentExpression(Box::new(
+                                    AssignmentExpression {
+                                        left: Expression::Identifier(Identifier {
+                                            name: "c".to_string()
+                                        }),
+                                        right: Expression::AssignmentExpression(Box::new(
+                                            AssignmentExpression {
+                                                left: Expression::Identifier(Identifier {
+                                                    name: "d".to_string()
+                                                }),
+                                                right: Expression::Literal(Literal::NumberLiteral(
+                                                    NumberLiteral { value: 34.0 }
+                                                )),
+                                                operator: AssignmentOperator::BitwiseXor
+                                            }
+                                        )),
+                                        operator: AssignmentOperator::BitwiseAnd
+                                    }
+                                )),
+                                operator: AssignmentOperator::BitwiseOr
+                            }
+                        )))
+                    }]
+                })),
             ]
         );
     }
