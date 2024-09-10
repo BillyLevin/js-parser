@@ -319,6 +319,10 @@ impl Token {
                 | Token::BitwiseOrEqual
                 | Token::BitwiseXorEqual
                 | Token::BitwiseAndEqual
+                | Token::ExponentiationEqual
+                | Token::LogicalOrEqual
+                | Token::LogicalAndEqual
+                | Token::NullishCoalescingEqual
         )
     }
 }

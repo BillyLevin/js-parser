@@ -448,6 +448,7 @@ mod tests {
             var a = b %= c %= d;
             var a = b <<= c >>= d >>>= 27;
             var a = b |= c &= d ^= 34;
+            var a = b **= c ||= d &&= e ??= "hello";
         "#;
 
         let lexer = Lexer::new(input);
@@ -1622,6 +1623,53 @@ mod tests {
                                     }
                                 )),
                                 operator: AssignmentOperator::BitwiseOr
+                            }
+                        )))
+                    }]
+                })),
+                // var a = b **= c ||= d &&= e ??= "hello";
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "a".to_string()
+                        }),
+                        init: Some(Expression::AssignmentExpression(Box::new(
+                            AssignmentExpression {
+                                left: Expression::Identifier(Identifier {
+                                    name: "b".to_string()
+                                }),
+                                right: Expression::AssignmentExpression(Box::new(
+                                    AssignmentExpression {
+                                        left: Expression::Identifier(Identifier {
+                                            name: "c".to_string()
+                                        }),
+                                        right: Expression::AssignmentExpression(Box::new(
+                                            AssignmentExpression {
+                                                left: Expression::Identifier(Identifier {
+                                                    name: "d".to_string()
+                                                }),
+                                                right: Expression::AssignmentExpression(Box::new(
+                                                    AssignmentExpression {
+                                                        left: Expression::Identifier(Identifier {
+                                                            name: "e".to_string()
+                                                        }),
+                                                        right: Expression::Literal(
+                                                            Literal::StringLiteral(StringLiteral {
+                                                                value: "hello".to_string()
+                                                            })
+                                                        ),
+                                                        operator:
+                                                            AssignmentOperator::NullishCoalescing,
+                                                    }
+                                                )),
+                                                operator: AssignmentOperator::LogicalAnd
+                                            }
+                                        )),
+                                        operator: AssignmentOperator::LogicalOr
+                                    }
+                                )),
+                                operator: AssignmentOperator::Exponentiation
                             }
                         )))
                     }]

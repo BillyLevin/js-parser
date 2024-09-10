@@ -308,6 +308,14 @@ pub enum AssignmentOperator {
     BitwiseXor,
     /// `&=`
     BitwiseAnd,
+    /// `**=`
+    Exponentiation,
+    /// `||=`
+    LogicalOr,
+    /// `&&=`
+    LogicalAnd,
+    /// `??=`
+    NullishCoalescing,
 }
 
 impl From<&Token> for AssignmentOperator {
@@ -325,6 +333,10 @@ impl From<&Token> for AssignmentOperator {
             Token::BitwiseOrEqual => AssignmentOperator::BitwiseOr,
             Token::BitwiseXorEqual => AssignmentOperator::BitwiseXor,
             Token::BitwiseAndEqual => AssignmentOperator::BitwiseAnd,
+            Token::ExponentiationEqual => AssignmentOperator::Exponentiation,
+            Token::LogicalOrEqual => AssignmentOperator::LogicalOr,
+            Token::LogicalAndEqual => AssignmentOperator::LogicalAnd,
+            Token::NullishCoalescingEqual => AssignmentOperator::NullishCoalescing,
             _ => unreachable!("this function should only be called with tokens that can be mapped to an assignment operation"),
         }
     }
