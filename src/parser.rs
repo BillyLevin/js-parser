@@ -393,6 +393,69 @@ mod tests {
 
     use super::*;
 
+    macro_rules! binary_expr {
+        ($left:expr, $right:expr, $op:ident) => {
+            Expression::BinaryExpression(Box::new(BinaryExpression {
+                left: $left,
+                right: $right,
+                operator: BinaryOperator::$op,
+            }))
+        };
+    }
+
+    macro_rules! logical_expr {
+        ($left:expr, $right:expr, $op:ident) => {
+            Expression::LogicalExpression(Box::new(LogicalExpression {
+                left: $left,
+                right: $right,
+                operator: LogicalOperator::$op,
+            }))
+        };
+    }
+
+    macro_rules! assign_expr {
+        ($left:expr, $right:expr, $op:ident) => {
+            Expression::AssignmentExpression(Box::new(AssignmentExpression {
+                left: $left,
+                right: $right,
+                operator: AssignmentOperator::$op,
+            }))
+        };
+    }
+
+    macro_rules! ident_expr {
+        ($ident:expr) => {
+            Expression::Identifier(Identifier {
+                name: $ident.to_string(),
+            })
+        };
+    }
+
+    macro_rules! literal_expr {
+        (true) => {
+            Expression::Literal(Literal::BooleanLiteral(BooleanLiteral { value: true }))
+        };
+
+        (false) => {
+            Expression::Literal(Literal::BooleanLiteral(BooleanLiteral { value: false }))
+        };
+
+        (null) => {
+            Expression::Literal(Literal::NullLiteral)
+        };
+
+        ($lit:literal) => {
+            match $lit.to_string().parse::<f64>() {
+                Ok(num) => {
+                    Expression::Literal(Literal::NumberLiteral(NumberLiteral { value: num }))
+                }
+                _ => Expression::Literal(Literal::StringLiteral(StringLiteral {
+                    value: $lit.to_string(),
+                })),
+            }
+        };
+    }
+
     #[test]
     fn parse_variable_statement() {
         let input = r#"
@@ -465,9 +528,7 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "x".to_string()
                         }),
-                        init: Some(Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                            value: 5.0
-                        })))
+                        init: Some(literal_expr!(5))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -476,9 +537,7 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "y".to_string()
                         }),
-                        init: Some(Expression::Literal(Literal::StringLiteral(StringLiteral {
-                            value: "hello".to_string()
-                        })))
+                        init: Some(literal_expr!("hello"))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -487,9 +546,7 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "z".to_string()
                         }),
-                        init: Some(Expression::Literal(Literal::BooleanLiteral(
-                            BooleanLiteral { value: false }
-                        )))
+                        init: Some(literal_expr!(false))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -507,7 +564,7 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "d".to_string()
                         }),
-                        init: Some(Expression::Literal(Literal::NullLiteral))
+                        init: Some(literal_expr!(null))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -551,9 +608,7 @@ mod tests {
                             id: Pattern::Identifier(Identifier {
                                 name: "c".to_string()
                             }),
-                            init: Some(Expression::Literal(Literal::NumberLiteral(
-                                NumberLiteral { value: 4.0 }
-                            )))
+                            init: Some(literal_expr!(4))
                         }
                     ]
                 })),
@@ -564,19 +619,13 @@ mod tests {
                             id: Pattern::Identifier(Identifier {
                                 name: "hello".to_string()
                             }),
-                            init: Some(Expression::Literal(Literal::StringLiteral(
-                                StringLiteral {
-                                    value: "world".to_string()
-                                }
-                            )))
+                            init: Some(literal_expr!("world"))
                         },
                         VariableDeclarator {
                             id: Pattern::Identifier(Identifier {
                                 name: "bool".to_string()
                             }),
-                            init: Some(Expression::Literal(Literal::BooleanLiteral(
-                                BooleanLiteral { value: false }
-                            )))
+                            init: Some(literal_expr!(false))
                         }
                     ]
                 })),
@@ -586,15 +635,7 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "sum".to_string()
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                value: 4.0
-                            })),
-                            right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                value: 5.0
-                            })),
-                            operator: BinaryOperator::Plus
-                        })))
+                        init: Some(binary_expr!(literal_expr!(4), literal_expr!(5), Plus))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -603,15 +644,7 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "product".to_string()
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                value: 27.0
-                            })),
-                            right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                value: 8.0
-                            })),
-                            operator: BinaryOperator::Multiply
-                        })))
+                        init: Some(binary_expr!(literal_expr!(27), literal_expr!(8), Multiply))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -620,21 +653,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "precedence".to_string()
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                value: 4.0
-                            })),
-                            right: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 27.0
-                                })),
-                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 8.0
-                                })),
-                                operator: BinaryOperator::Multiply
-                            })),
-                            operator: BinaryOperator::Plus
-                        })))
+                        init: Some(binary_expr!(
+                            literal_expr!(4),
+                            binary_expr!(literal_expr!(27), literal_expr!(8), Multiply),
+                            Plus
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -643,21 +666,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "precedence2".to_string()
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 4.0
-                                })),
-                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 27.0
-                                })),
-                                operator: BinaryOperator::Multiply
-                            })),
-                            right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                value: 8.0
-                            })),
-                            operator: BinaryOperator::Plus
-                        })))
+                        init: Some(binary_expr!(
+                            binary_expr!(literal_expr!(4), literal_expr!(27), Multiply),
+                            literal_expr!(8),
+                            Plus
+                        )),
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -666,59 +679,23 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "lotsOfOperations".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                left: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                    left: Expression::BinaryExpression(Box::new(
-                                        BinaryExpression {
-                                            left: Expression::BinaryExpression(Box::new(
-                                                BinaryExpression {
-                                                    left: Expression::Literal(
-                                                        Literal::NumberLiteral(NumberLiteral {
-                                                            value: 4.0
-                                                        })
-                                                    ),
-                                                    right: Expression::Literal(
-                                                        Literal::NumberLiteral(NumberLiteral {
-                                                            value: 27.0
-                                                        })
-                                                    ),
-                                                    operator: BinaryOperator::Multiply
-                                                }
-                                            )),
-                                            right: Expression::Literal(Literal::NumberLiteral(
-                                                NumberLiteral { value: 45.0 }
-                                            )),
-                                            operator: BinaryOperator::Divide
-                                        }
-                                    )),
-                                    right: Expression::Literal(Literal::NumberLiteral(
-                                        NumberLiteral { value: 4.0 }
-                                    )),
-                                    operator: BinaryOperator::Plus
-                                })),
-                                right: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                    left: Expression::Literal(Literal::NumberLiteral(
-                                        NumberLiteral { value: 7.5 }
-                                    )),
-                                    right: Expression::Literal(Literal::NumberLiteral(
-                                        NumberLiteral { value: 2.0 }
-                                    )),
-                                    operator: BinaryOperator::Multiply
-                                })),
-                                operator: BinaryOperator::Minus
-                            })),
-                            right: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 67.45
-                                })),
-                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 3.0
-                                })),
-                                operator: BinaryOperator::Divide
-                            })),
-                            operator: BinaryOperator::Plus
-                        })))
+                        init: Some(binary_expr!(
+                            binary_expr!(
+                                binary_expr!(
+                                    binary_expr!(
+                                        binary_expr!(literal_expr!(4), literal_expr!(27), Multiply),
+                                        literal_expr!(45),
+                                        Divide
+                                    ),
+                                    literal_expr!(4),
+                                    Plus
+                                ),
+                                binary_expr!(literal_expr!(7.5), literal_expr!(2), Multiply),
+                                Minus
+                            ),
+                            binary_expr!(literal_expr!(67.45), literal_expr!(3), Divide),
+                            Plus
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -727,33 +704,15 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "exp".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 4.0
-                                })),
-                                right: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                    left: Expression::Literal(Literal::NumberLiteral(
-                                        NumberLiteral { value: 3.0 }
-                                    )),
-                                    right: Expression::Literal(Literal::NumberLiteral(
-                                        NumberLiteral { value: 2.0 }
-                                    )),
-                                    operator: BinaryOperator::Exponentiation
-                                })),
-                                operator: BinaryOperator::Exponentiation
-                            })),
-                            right: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 34.0
-                                })),
-                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 4.0
-                                })),
-                                operator: BinaryOperator::Multiply,
-                            })),
-                            operator: BinaryOperator::Plus
-                        })))
+                        init: Some(binary_expr!(
+                            binary_expr!(
+                                literal_expr!(4),
+                                binary_expr!(literal_expr!(3), literal_expr!(2), Exponentiation),
+                                Exponentiation
+                            ),
+                            binary_expr!(literal_expr!(34), literal_expr!(4), Multiply),
+                            Plus
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -762,21 +721,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "exp2".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                value: 45.0
-                            })),
-                            right: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 7.0
-                                })),
-                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 3.0
-                                })),
-                                operator: BinaryOperator::Exponentiation,
-                            })),
-                            operator: BinaryOperator::Multiply
-                        })))
+                        init: Some(binary_expr!(
+                            literal_expr!(45),
+                            binary_expr!(literal_expr!(7), literal_expr!(3), Exponentiation),
+                            Multiply
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -785,21 +734,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "remainder".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 45.0
-                                })),
-                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 5.0
-                                })),
-                                operator: BinaryOperator::Remainder,
-                            })),
-                            right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                value: 3.0
-                            })),
-                            operator: BinaryOperator::Plus
-                        })))
+                        init: Some(binary_expr!(
+                            binary_expr!(literal_expr!(45), literal_expr!(5), Remainder),
+                            literal_expr!(3),
+                            Plus
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -808,21 +747,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "remainder2".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                value: 45.0
-                            })),
-                            right: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 5.0
-                                })),
-                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 3.0
-                                })),
-                                operator: BinaryOperator::Remainder,
-                            })),
-                            operator: BinaryOperator::Plus
-                        })))
+                        init: Some(binary_expr!(
+                            literal_expr!(45),
+                            binary_expr!(literal_expr!(5), literal_expr!(3), Remainder),
+                            Plus
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -831,21 +760,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "leftShift".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                value: 45.0
-                            })),
-                            right: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 5.0
-                                })),
-                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 3.0
-                                })),
-                                operator: BinaryOperator::Multiply,
-                            })),
-                            operator: BinaryOperator::LeftShift
-                        })))
+                        init: Some(binary_expr!(
+                            literal_expr!(45),
+                            binary_expr!(literal_expr!(5), literal_expr!(3), Multiply),
+                            LeftShift
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -854,21 +773,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "leftShift2".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 45.0
-                                })),
-                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 5.0
-                                })),
-                                operator: BinaryOperator::Multiply,
-                            })),
-                            right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                value: 3.0
-                            })),
-                            operator: BinaryOperator::LeftShift
-                        })))
+                        init: Some(binary_expr!(
+                            binary_expr!(literal_expr!(45), literal_expr!(5), Multiply),
+                            literal_expr!(3),
+                            LeftShift
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -877,21 +786,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "rightShift".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                value: 45.0
-                            })),
-                            right: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 5.0
-                                })),
-                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 3.0
-                                })),
-                                operator: BinaryOperator::Multiply,
-                            })),
-                            operator: BinaryOperator::RightShift
-                        })))
+                        init: Some(binary_expr!(
+                            literal_expr!(45),
+                            binary_expr!(literal_expr!(5), literal_expr!(3), Multiply),
+                            RightShift
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -900,21 +799,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "rightShift2".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 45.0
-                                })),
-                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 5.0
-                                })),
-                                operator: BinaryOperator::Multiply,
-                            })),
-                            right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                value: 3.0
-                            })),
-                            operator: BinaryOperator::RightShift
-                        })))
+                        init: Some(binary_expr!(
+                            binary_expr!(literal_expr!(45), literal_expr!(5), Multiply),
+                            literal_expr!(3),
+                            RightShift
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -923,21 +812,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "unsignedRightShift".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                value: 45.0
-                            })),
-                            right: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 5.0
-                                })),
-                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 3.0
-                                })),
-                                operator: BinaryOperator::Multiply,
-                            })),
-                            operator: BinaryOperator::UnsignedRightShift
-                        })))
+                        init: Some(binary_expr!(
+                            literal_expr!(45),
+                            binary_expr!(literal_expr!(5), literal_expr!(3), Multiply),
+                            UnsignedRightShift
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -946,21 +825,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "unsignedRightShift2".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 45.0
-                                })),
-                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 5.0
-                                })),
-                                operator: BinaryOperator::Multiply,
-                            })),
-                            right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                value: 3.0
-                            })),
-                            operator: BinaryOperator::UnsignedRightShift
-                        })))
+                        init: Some(binary_expr!(
+                            binary_expr!(literal_expr!(45), literal_expr!(5), Multiply),
+                            literal_expr!(3),
+                            UnsignedRightShift
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -969,21 +838,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "lessThan".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                value: 34.0
-                            })),
-                            right: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 7.0
-                                })),
-                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 2.0
-                                })),
-                                operator: BinaryOperator::Plus,
-                            })),
-                            operator: BinaryOperator::LessThan
-                        })))
+                        init: Some(binary_expr!(
+                            literal_expr!(34),
+                            binary_expr!(literal_expr!(7), literal_expr!(2), Plus),
+                            LessThan
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -992,21 +851,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "lessThan2".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 34.0
-                                })),
-                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 7.0
-                                })),
-                                operator: BinaryOperator::Plus,
-                            })),
-                            right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                value: 2.0
-                            })),
-                            operator: BinaryOperator::LessThan
-                        })))
+                        init: Some(binary_expr!(
+                            binary_expr!(literal_expr!(34), literal_expr!(7), Plus),
+                            literal_expr!(2),
+                            LessThan
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -1015,21 +864,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "lessThanEqual".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                value: 34.0
-                            })),
-                            right: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 7.0
-                                })),
-                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 2.0
-                                })),
-                                operator: BinaryOperator::Plus,
-                            })),
-                            operator: BinaryOperator::LessThanEqual
-                        })))
+                        init: Some(binary_expr!(
+                            literal_expr!(34),
+                            binary_expr!(literal_expr!(7), literal_expr!(2), Plus),
+                            LessThanEqual
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -1038,21 +877,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "lessThanEqual2".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 34.0
-                                })),
-                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 7.0
-                                })),
-                                operator: BinaryOperator::Plus,
-                            })),
-                            right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                value: 2.0
-                            })),
-                            operator: BinaryOperator::LessThanEqual
-                        })))
+                        init: Some(binary_expr!(
+                            binary_expr!(literal_expr!(34), literal_expr!(7), Plus),
+                            literal_expr!(2),
+                            LessThanEqual
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -1061,21 +890,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "greaterThan".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                value: 34.0
-                            })),
-                            right: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 7.0
-                                })),
-                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 2.0
-                                })),
-                                operator: BinaryOperator::Plus,
-                            })),
-                            operator: BinaryOperator::GreaterThan
-                        })))
+                        init: Some(binary_expr!(
+                            literal_expr!(34),
+                            binary_expr!(literal_expr!(7), literal_expr!(2), Plus),
+                            GreaterThan
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -1084,21 +903,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "greaterThan2".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 34.0
-                                })),
-                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 7.0
-                                })),
-                                operator: BinaryOperator::Plus,
-                            })),
-                            right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                value: 2.0
-                            })),
-                            operator: BinaryOperator::GreaterThan
-                        })))
+                        init: Some(binary_expr!(
+                            binary_expr!(literal_expr!(34), literal_expr!(7), Plus),
+                            literal_expr!(2),
+                            GreaterThan
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -1107,21 +916,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "greaterThanEqual".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                value: 34.0
-                            })),
-                            right: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 7.0
-                                })),
-                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 2.0
-                                })),
-                                operator: BinaryOperator::Plus,
-                            })),
-                            operator: BinaryOperator::GreaterThanEqual
-                        })))
+                        init: Some(binary_expr!(
+                            literal_expr!(34),
+                            binary_expr!(literal_expr!(7), literal_expr!(2), Plus),
+                            GreaterThanEqual
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -1130,21 +929,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "greaterThanEqual2".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 34.0
-                                })),
-                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 7.0
-                                })),
-                                operator: BinaryOperator::Plus,
-                            })),
-                            right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                value: 2.0
-                            })),
-                            operator: BinaryOperator::GreaterThanEqual
-                        })))
+                        init: Some(binary_expr!(
+                            binary_expr!(literal_expr!(34), literal_expr!(7), Plus),
+                            literal_expr!(2),
+                            GreaterThanEqual
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -1153,15 +942,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "inOperator".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::Literal(Literal::StringLiteral(StringLiteral {
-                                value: "property".to_string(),
-                            })),
-                            right: Expression::Identifier(Identifier {
-                                name: "y".to_string()
-                            }),
-                            operator: BinaryOperator::In
-                        })))
+                        init: Some(binary_expr!(
+                            literal_expr!("property"),
+                            ident_expr!("y"),
+                            In
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -1170,36 +955,20 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "instanceofOperator".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::Identifier(Identifier {
-                                name: "x".to_string()
-                            }),
-                            right: Expression::Identifier(Identifier {
-                                name: "y".to_string()
-                            }),
-                            operator: BinaryOperator::Instanceof
-                        })))
+                        init: Some(binary_expr!(ident_expr!("x"), ident_expr!("y"), Instanceof))
                     }]
                 })),
-                // var tripleEquals = x === 4;
-                // var tripleEquals2 = "hello" === false;
-                // var notTripleEquals = 4 !== x;
-                // var notTripleEquals2 = false !== "hello";
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
                         id: Pattern::Identifier(Identifier {
                             name: "doubleEquals".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::Identifier(Identifier {
-                                name: "x".to_string()
-                            }),
-                            right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                value: 4.0
-                            })),
-                            operator: BinaryOperator::DoubleEqual
-                        })))
+                        init: Some(binary_expr!(
+                            ident_expr!("x"),
+                            literal_expr!(4),
+                            DoubleEqual
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -1208,15 +977,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "doubleEquals2".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::Literal(Literal::StringLiteral(StringLiteral {
-                                value: "hello".to_string()
-                            })),
-                            right: Expression::Literal(Literal::BooleanLiteral(BooleanLiteral {
-                                value: false
-                            })),
-                            operator: BinaryOperator::DoubleEqual
-                        })))
+                        init: Some(binary_expr!(
+                            literal_expr!("hello"),
+                            literal_expr!(false),
+                            DoubleEqual
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -1225,15 +990,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "notDoubleEquals".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                value: 4.0
-                            })),
-                            right: Expression::Identifier(Identifier {
-                                name: "x".to_string()
-                            }),
-                            operator: BinaryOperator::NotDoubleEqual
-                        })))
+                        init: Some(binary_expr!(
+                            literal_expr!(4),
+                            ident_expr!("x"),
+                            NotDoubleEqual
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -1242,15 +1003,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "notDoubleEquals2".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::Literal(Literal::BooleanLiteral(BooleanLiteral {
-                                value: false
-                            })),
-                            right: Expression::Literal(Literal::StringLiteral(StringLiteral {
-                                value: "hello".to_string()
-                            })),
-                            operator: BinaryOperator::NotDoubleEqual
-                        })))
+                        init: Some(binary_expr!(
+                            literal_expr!(false),
+                            literal_expr!("hello"),
+                            NotDoubleEqual
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -1259,15 +1016,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "tripleEquals".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::Identifier(Identifier {
-                                name: "x".to_string()
-                            }),
-                            right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                value: 4.0
-                            })),
-                            operator: BinaryOperator::TripleEqual
-                        })))
+                        init: Some(binary_expr!(
+                            ident_expr!("x"),
+                            literal_expr!(4),
+                            TripleEqual
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -1276,15 +1029,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "tripleEquals2".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::Literal(Literal::StringLiteral(StringLiteral {
-                                value: "hello".to_string()
-                            })),
-                            right: Expression::Literal(Literal::BooleanLiteral(BooleanLiteral {
-                                value: false
-                            })),
-                            operator: BinaryOperator::TripleEqual
-                        })))
+                        init: Some(binary_expr!(
+                            literal_expr!("hello"),
+                            literal_expr!(false),
+                            TripleEqual
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -1293,15 +1042,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "notTripleEquals".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                value: 4.0
-                            })),
-                            right: Expression::Identifier(Identifier {
-                                name: "x".to_string()
-                            }),
-                            operator: BinaryOperator::NotTripleEqual
-                        })))
+                        init: Some(binary_expr!(
+                            literal_expr!(4),
+                            ident_expr!("x"),
+                            NotTripleEqual
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -1310,15 +1055,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "notTripleEquals2".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::Literal(Literal::BooleanLiteral(BooleanLiteral {
-                                value: false
-                            })),
-                            right: Expression::Literal(Literal::StringLiteral(StringLiteral {
-                                value: "hello".to_string()
-                            })),
-                            operator: BinaryOperator::NotTripleEqual
-                        })))
+                        init: Some(binary_expr!(
+                            literal_expr!(false),
+                            literal_expr!("hello"),
+                            NotTripleEqual
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -1327,33 +1068,15 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "bitwise".to_string(),
                         }),
-                        init: Some(Expression::BinaryExpression(Box::new(BinaryExpression {
-                            left: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 45.0
-                                })),
-                                right: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                    left: Expression::Literal(Literal::NumberLiteral(
-                                        NumberLiteral { value: 3.0 }
-                                    )),
-                                    right: Expression::Literal(Literal::NumberLiteral(
-                                        NumberLiteral { value: 23.0 }
-                                    )),
-                                    operator: BinaryOperator::BitwiseAnd
-                                })),
-                                operator: BinaryOperator::BitwiseXor
-                            })),
-                            right: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                left: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 14.0
-                                })),
-                                right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                    value: 7.0
-                                })),
-                                operator: BinaryOperator::Plus
-                            })),
-                            operator: BinaryOperator::BitwiseOr
-                        })))
+                        init: Some(binary_expr!(
+                            binary_expr!(
+                                literal_expr!(45),
+                                binary_expr!(literal_expr!(3), literal_expr!(23), BitwiseAnd),
+                                BitwiseXor
+                            ),
+                            binary_expr!(literal_expr!(14), literal_expr!(7), Plus),
+                            BitwiseOr
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -1362,33 +1085,19 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "logical".to_string()
                         }),
-                        init: Some(Expression::LogicalExpression(Box::new(LogicalExpression {
-                            left: Expression::LogicalExpression(Box::new(LogicalExpression {
-                                left: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                    left: Expression::Literal(Literal::BooleanLiteral(
-                                        BooleanLiteral { value: true }
-                                    )),
-                                    right: Expression::Literal(Literal::BooleanLiteral(
-                                        BooleanLiteral { value: false }
-                                    )),
-                                    operator: BinaryOperator::TripleEqual
-                                })),
-                                right: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                    left: Expression::Literal(Literal::NumberLiteral(
-                                        NumberLiteral { value: 4.0 }
-                                    )),
-                                    right: Expression::Literal(Literal::NumberLiteral(
-                                        NumberLiteral { value: 5.0 }
-                                    )),
-                                    operator: BinaryOperator::GreaterThan
-                                })),
-                                operator: LogicalOperator::And
-                            })),
-                            right: Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                                value: 3.0
-                            })),
-                            operator: LogicalOperator::Or
-                        })))
+                        init: Some(logical_expr!(
+                            logical_expr!(
+                                binary_expr!(
+                                    literal_expr!(true),
+                                    literal_expr!(false),
+                                    TripleEqual
+                                ),
+                                binary_expr!(literal_expr!(4), literal_expr!(5), GreaterThan),
+                                And
+                            ),
+                            literal_expr!(3),
+                            Or
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -1397,33 +1106,15 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "logical2".to_string()
                         }),
-                        init: Some(Expression::LogicalExpression(Box::new(LogicalExpression {
-                            left: Expression::Literal(Literal::BooleanLiteral(BooleanLiteral {
-                                value: true
-                            })),
-                            right: Expression::LogicalExpression(Box::new(LogicalExpression {
-                                left: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                    left: Expression::Literal(Literal::BooleanLiteral(
-                                        BooleanLiteral { value: false }
-                                    )),
-                                    right: Expression::Literal(Literal::NumberLiteral(
-                                        NumberLiteral { value: 4.0 }
-                                    )),
-                                    operator: BinaryOperator::GreaterThan
-                                })),
-                                right: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                    left: Expression::Literal(Literal::NumberLiteral(
-                                        NumberLiteral { value: 5.0 }
-                                    )),
-                                    right: Expression::Literal(Literal::NumberLiteral(
-                                        NumberLiteral { value: 3.0 }
-                                    )),
-                                    operator: BinaryOperator::TripleEqual
-                                })),
-                                operator: LogicalOperator::And
-                            })),
-                            operator: LogicalOperator::Or
-                        })))
+                        init: Some(logical_expr!(
+                            literal_expr!(true),
+                            logical_expr!(
+                                binary_expr!(literal_expr!(false), literal_expr!(4), GreaterThan),
+                                binary_expr!(literal_expr!(5), literal_expr!(3), TripleEqual),
+                                And
+                            ),
+                            Or
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -1432,15 +1123,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "logical3".to_string()
                         }),
-                        init: Some(Expression::LogicalExpression(Box::new(LogicalExpression {
-                            left: Expression::Identifier(Identifier {
-                                name: "thing".to_string()
-                            }),
-                            right: Expression::Literal(Literal::StringLiteral(StringLiteral {
-                                value: "fallback".to_string()
-                            })),
-                            operator: LogicalOperator::NullishCoalescing
-                        })))
+                        init: Some(logical_expr!(
+                            ident_expr!("thing"),
+                            literal_expr!("fallback"),
+                            NullishCoalescing
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -1449,23 +1136,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "a".to_string()
                         }),
-                        init: Some(Expression::AssignmentExpression(Box::new(
-                            AssignmentExpression {
-                                left: Expression::Identifier(Identifier {
-                                    name: "b".to_string()
-                                }),
-                                right: Expression::BinaryExpression(Box::new(BinaryExpression {
-                                    left: Expression::Literal(Literal::NumberLiteral(
-                                        NumberLiteral { value: 4.0 }
-                                    )),
-                                    right: Expression::Literal(Literal::NumberLiteral(
-                                        NumberLiteral { value: 5.0 }
-                                    )),
-                                    operator: BinaryOperator::GreaterThan
-                                })),
-                                operator: AssignmentOperator::Assign
-                            }
-                        )))
+                        init: Some(assign_expr!(
+                            ident_expr!("b"),
+                            binary_expr!(literal_expr!(4), literal_expr!(5), GreaterThan),
+                            Assign
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -1474,25 +1149,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "a".to_string()
                         }),
-                        init: Some(Expression::AssignmentExpression(Box::new(
-                            AssignmentExpression {
-                                left: Expression::Identifier(Identifier {
-                                    name: "b".to_string()
-                                }),
-                                right: Expression::AssignmentExpression(Box::new(
-                                    AssignmentExpression {
-                                        left: Expression::Identifier(Identifier {
-                                            name: "c".to_string()
-                                        }),
-                                        right: Expression::Literal(Literal::NumberLiteral(
-                                            NumberLiteral { value: 3.0 }
-                                        )),
-                                        operator: AssignmentOperator::Divide
-                                    }
-                                )),
-                                operator: AssignmentOperator::Multiply
-                            }
-                        )))
+                        init: Some(assign_expr!(
+                            ident_expr!("b"),
+                            assign_expr!(ident_expr!("c"), literal_expr!(3), Divide),
+                            Multiply
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -1501,33 +1162,15 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "a".to_string()
                         }),
-                        init: Some(Expression::AssignmentExpression(Box::new(
-                            AssignmentExpression {
-                                left: Expression::Identifier(Identifier {
-                                    name: "b".to_string()
-                                }),
-                                right: Expression::AssignmentExpression(Box::new(
-                                    AssignmentExpression {
-                                        left: Expression::Identifier(Identifier {
-                                            name: "c".to_string()
-                                        }),
-                                        right: Expression::AssignmentExpression(Box::new(
-                                            AssignmentExpression {
-                                                left: Expression::Identifier(Identifier {
-                                                    name: "d".to_string()
-                                                }),
-                                                right: Expression::Literal(Literal::NumberLiteral(
-                                                    NumberLiteral { value: 4.0 }
-                                                )),
-                                                operator: AssignmentOperator::Multiply
-                                            }
-                                        )),
-                                        operator: AssignmentOperator::Plus
-                                    }
-                                )),
-                                operator: AssignmentOperator::Minus
-                            }
-                        )))
+                        init: Some(assign_expr!(
+                            ident_expr!("b"),
+                            assign_expr!(
+                                ident_expr!("c"),
+                                assign_expr!(ident_expr!("d"), literal_expr!(4), Multiply),
+                                Plus
+                            ),
+                            Minus
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -1536,25 +1179,11 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "a".to_string()
                         }),
-                        init: Some(Expression::AssignmentExpression(Box::new(
-                            AssignmentExpression {
-                                left: Expression::Identifier(Identifier {
-                                    name: "b".to_string()
-                                }),
-                                right: Expression::AssignmentExpression(Box::new(
-                                    AssignmentExpression {
-                                        left: Expression::Identifier(Identifier {
-                                            name: "c".to_string()
-                                        }),
-                                        right: Expression::Identifier(Identifier {
-                                            name: "d".to_string()
-                                        }),
-                                        operator: AssignmentOperator::Remainder
-                                    }
-                                )),
-                                operator: AssignmentOperator::Remainder
-                            }
-                        )))
+                        init: Some(assign_expr!(
+                            ident_expr!("b"),
+                            assign_expr!(ident_expr!("c"), ident_expr!("d"), Remainder),
+                            Remainder
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -1563,33 +1192,19 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "a".to_string()
                         }),
-                        init: Some(Expression::AssignmentExpression(Box::new(
-                            AssignmentExpression {
-                                left: Expression::Identifier(Identifier {
-                                    name: "b".to_string()
-                                }),
-                                right: Expression::AssignmentExpression(Box::new(
-                                    AssignmentExpression {
-                                        left: Expression::Identifier(Identifier {
-                                            name: "c".to_string()
-                                        }),
-                                        right: Expression::AssignmentExpression(Box::new(
-                                            AssignmentExpression {
-                                                left: Expression::Identifier(Identifier {
-                                                    name: "d".to_string()
-                                                }),
-                                                right: Expression::Literal(Literal::NumberLiteral(
-                                                    NumberLiteral { value: 27.0 }
-                                                )),
-                                                operator: AssignmentOperator::UnsignedRightShift
-                                            }
-                                        )),
-                                        operator: AssignmentOperator::RightShift
-                                    }
-                                )),
-                                operator: AssignmentOperator::LeftShift
-                            }
-                        )))
+                        init: Some(assign_expr!(
+                            ident_expr!("b"),
+                            assign_expr!(
+                                ident_expr!("c"),
+                                assign_expr!(
+                                    ident_expr!("d"),
+                                    literal_expr!(27),
+                                    UnsignedRightShift
+                                ),
+                                RightShift
+                            ),
+                            LeftShift
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
@@ -1598,80 +1213,40 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "a".to_string()
                         }),
-                        init: Some(Expression::AssignmentExpression(Box::new(
-                            AssignmentExpression {
-                                left: Expression::Identifier(Identifier {
-                                    name: "b".to_string()
-                                }),
-                                right: Expression::AssignmentExpression(Box::new(
-                                    AssignmentExpression {
-                                        left: Expression::Identifier(Identifier {
-                                            name: "c".to_string()
-                                        }),
-                                        right: Expression::AssignmentExpression(Box::new(
-                                            AssignmentExpression {
-                                                left: Expression::Identifier(Identifier {
-                                                    name: "d".to_string()
-                                                }),
-                                                right: Expression::Literal(Literal::NumberLiteral(
-                                                    NumberLiteral { value: 34.0 }
-                                                )),
-                                                operator: AssignmentOperator::BitwiseXor
-                                            }
-                                        )),
-                                        operator: AssignmentOperator::BitwiseAnd
-                                    }
-                                )),
-                                operator: AssignmentOperator::BitwiseOr
-                            }
-                        )))
+                        init: Some(assign_expr!(
+                            ident_expr!("b"),
+                            assign_expr!(
+                                ident_expr!("c"),
+                                assign_expr!(ident_expr!("d"), literal_expr!(34), BitwiseXor),
+                                BitwiseAnd
+                            ),
+                            BitwiseOr
+                        ))
                     }]
                 })),
-                // var a = b **= c ||= d &&= e ??= "hello";
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
                         id: Pattern::Identifier(Identifier {
                             name: "a".to_string()
                         }),
-                        init: Some(Expression::AssignmentExpression(Box::new(
-                            AssignmentExpression {
-                                left: Expression::Identifier(Identifier {
-                                    name: "b".to_string()
-                                }),
-                                right: Expression::AssignmentExpression(Box::new(
-                                    AssignmentExpression {
-                                        left: Expression::Identifier(Identifier {
-                                            name: "c".to_string()
-                                        }),
-                                        right: Expression::AssignmentExpression(Box::new(
-                                            AssignmentExpression {
-                                                left: Expression::Identifier(Identifier {
-                                                    name: "d".to_string()
-                                                }),
-                                                right: Expression::AssignmentExpression(Box::new(
-                                                    AssignmentExpression {
-                                                        left: Expression::Identifier(Identifier {
-                                                            name: "e".to_string()
-                                                        }),
-                                                        right: Expression::Literal(
-                                                            Literal::StringLiteral(StringLiteral {
-                                                                value: "hello".to_string()
-                                                            })
-                                                        ),
-                                                        operator:
-                                                            AssignmentOperator::NullishCoalescing,
-                                                    }
-                                                )),
-                                                operator: AssignmentOperator::LogicalAnd
-                                            }
-                                        )),
-                                        operator: AssignmentOperator::LogicalOr
-                                    }
-                                )),
-                                operator: AssignmentOperator::Exponentiation
-                            }
-                        )))
+                        init: Some(assign_expr!(
+                            ident_expr!("b"),
+                            assign_expr!(
+                                ident_expr!("c"),
+                                assign_expr!(
+                                    ident_expr!("d"),
+                                    assign_expr!(
+                                        ident_expr!("e"),
+                                        literal_expr!("hello"),
+                                        NullishCoalescing
+                                    ),
+                                    LogicalAnd
+                                ),
+                                LogicalOr
+                            ),
+                            Exponentiation
+                        ))
                     }]
                 })),
             ]
@@ -1792,9 +1367,7 @@ mod tests {
                         id: Pattern::Identifier(Identifier {
                             name: "a".to_string()
                         }),
-                        init: Some(Expression::Literal(Literal::StringLiteral(StringLiteral {
-                            value: "thing".to_string()
-                        })))
+                        init: Some(literal_expr!("thing"))
                     }]
                 })),
                 Statement::BlockStatement(BlockStatement {
@@ -1806,11 +1379,7 @@ mod tests {
                                     id: Pattern::Identifier(Identifier {
                                         name: "a".to_string()
                                     }),
-                                    init: Some(Expression::Literal(Literal::StringLiteral(
-                                        StringLiteral {
-                                            value: "another thing".to_string()
-                                        }
-                                    )))
+                                    init: Some(literal_expr!("another thing"))
                                 }]
                             }
                         )),
@@ -1821,9 +1390,7 @@ mod tests {
                                     id: Pattern::Identifier(Identifier {
                                         name: "b".to_string()
                                     }),
-                                    init: Some(Expression::Literal(Literal::NumberLiteral(
-                                        NumberLiteral { value: 54.0 }
-                                    )))
+                                    init: Some(literal_expr!(54))
                                 }]
                             }
                         ))
@@ -1862,9 +1429,7 @@ mod tests {
                                 id: Pattern::Identifier(Identifier {
                                     name: "a".to_string()
                                 }),
-                                init: Some(Expression::Literal(Literal::NumberLiteral(
-                                    NumberLiteral { value: 4.0 }
-                                )))
+                                init: Some(literal_expr!(4))
                             }]
                         }
                     ))
@@ -1880,11 +1445,7 @@ mod tests {
                                 id: Pattern::Identifier(Identifier {
                                     name: "b".to_string()
                                 }),
-                                init: Some(Expression::Literal(Literal::StringLiteral(
-                                    StringLiteral {
-                                        value: "hello".to_string()
-                                    }
-                                )))
+                                init: Some(literal_expr!("hello"))
                             }]
                         }
                     ))
