@@ -539,6 +539,15 @@ mod tests {
             var a = b |= c &= d ^= 34;
             var a = b **= c ||= d &&= e ??= "hello";
             var a = -b;
+            var a = +b;
+            var a = !b;
+            var a = ~b;
+            var a = typeof b;
+            var a = void b;
+            var a = delete b;
+            var a = b + -c * ~d === typeof e;
+            var a = !b / +c - -d > void e;
+            var a = +b > -c && ~d <= !e;
         "#;
 
         let lexer = Lexer::new(input);
@@ -1276,7 +1285,6 @@ mod tests {
                         ))
                     }]
                 })),
-                // var a = -b;
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
@@ -1284,6 +1292,123 @@ mod tests {
                             name: "a".to_string()
                         }),
                         init: Some(unary_expr!(ident_expr!("b"), Minus))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "a".to_string()
+                        }),
+                        init: Some(unary_expr!(ident_expr!("b"), Plus))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "a".to_string()
+                        }),
+                        init: Some(unary_expr!(ident_expr!("b"), LogicalNot))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "a".to_string()
+                        }),
+                        init: Some(unary_expr!(ident_expr!("b"), BitwiseNot))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "a".to_string()
+                        }),
+                        init: Some(unary_expr!(ident_expr!("b"), Typeof))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "a".to_string()
+                        }),
+                        init: Some(unary_expr!(ident_expr!("b"), Void))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "a".to_string()
+                        }),
+                        init: Some(unary_expr!(ident_expr!("b"), Delete))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "a".to_string()
+                        }),
+                        init: Some(binary_expr!(
+                            binary_expr!(
+                                ident_expr!("b"),
+                                binary_expr!(
+                                    unary_expr!(ident_expr!("c"), Minus),
+                                    unary_expr!(ident_expr!("d"), BitwiseNot),
+                                    Multiply
+                                ),
+                                Plus
+                            ),
+                            unary_expr!(ident_expr!("e"), Typeof),
+                            TripleEqual
+                        ))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "a".to_string()
+                        }),
+                        init: Some(binary_expr!(
+                            binary_expr!(
+                                binary_expr!(
+                                    unary_expr!(ident_expr!("b"), LogicalNot),
+                                    unary_expr!(ident_expr!("c"), Plus),
+                                    Divide
+                                ),
+                                unary_expr!(ident_expr!("d"), Minus),
+                                Minus
+                            ),
+                            unary_expr!(ident_expr!("e"), Void),
+                            GreaterThan
+                        ))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "a".to_string()
+                        }),
+                        init: Some(logical_expr!(
+                            binary_expr!(
+                                unary_expr!(ident_expr!("b"), Plus),
+                                unary_expr!(ident_expr!("c"), Minus),
+                                GreaterThan
+                            ),
+                            binary_expr!(
+                                unary_expr!(ident_expr!("d"), BitwiseNot),
+                                unary_expr!(ident_expr!("e"), LogicalNot),
+                                LessThanEqual
+                            ),
+                            And
+                        ))
                     }]
                 })),
             ]
