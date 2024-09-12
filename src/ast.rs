@@ -85,6 +85,7 @@ pub enum Expression {
     BinaryExpression(Box<BinaryExpression>),
     LogicalExpression(Box<LogicalExpression>),
     AssignmentExpression(Box<AssignmentExpression>),
+    UnaryExpression(Box<UnaryExpression>),
     Identifier(Identifier),
 }
 
@@ -338,6 +339,50 @@ impl From<&Token> for AssignmentOperator {
             Token::LogicalAndEqual => AssignmentOperator::LogicalAnd,
             Token::NullishCoalescingEqual => AssignmentOperator::NullishCoalescing,
             _ => unreachable!("this function should only be called with tokens that can be mapped to an assignment operation"),
+        }
+    }
+}
+
+/// https://github.com/estree/estree/blob/master/es5.md#unaryexpression
+#[derive(Debug, PartialEq)]
+pub struct UnaryExpression {
+    pub argument: Expression,
+    pub operator: UnaryOperator,
+    // TODO: estree spec contains this field, but as far as i can tell the unary operator is always
+    // a prefix. find out if this is needed
+    pub prefix: bool,
+}
+
+/// https://github.com/estree/estree/blob/master/es5.md#unaryoperator
+#[derive(Debug, PartialEq)]
+pub enum UnaryOperator {
+    /// `-`
+    Minus,
+    /// `+`
+    Plus,
+    /// `!`
+    LogicalNot,
+    /// `~`
+    BitwiseNot,
+    /// `typeof`
+    Typeof,
+    /// `void`
+    Void,
+    /// `delete`
+    Delete,
+}
+
+impl From<&Token> for UnaryOperator {
+    fn from(token: &Token) -> Self {
+        match token {
+           Token::Minus => UnaryOperator::Minus, 
+           Token::Plus => UnaryOperator::Plus, 
+           Token::Bang => UnaryOperator::LogicalNot, 
+           Token::BitwiseNot => UnaryOperator::BitwiseNot, 
+           Token::Typeof => UnaryOperator::Typeof, 
+           Token::Void => UnaryOperator::Void, 
+           Token::Delete => UnaryOperator::Delete, 
+            _ => unreachable!("this function should only be called with tokens that can be mapped to an unary operation"),
         }
     }
 }

@@ -64,6 +64,8 @@ impl TryFrom<&Token> for Precedence {
 
             t if t.is_assignment_operator() => Ok(Precedence::Assignment),
 
+            t if t.is_unary_operator() => Ok(Precedence::Prefix),
+
             _ => Err(()),
         }
     }

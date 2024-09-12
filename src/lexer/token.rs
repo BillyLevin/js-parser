@@ -325,4 +325,17 @@ impl Token {
                 | Token::NullishCoalescingEqual
         )
     }
+
+    pub fn is_unary_operator(&self) -> bool {
+        matches!(
+            self,
+            Token::Minus
+                | Token::Plus
+                | Token::Bang
+                | Token::BitwiseNot
+                | Token::Typeof
+                | Token::Void
+                | Token::Delete
+        )
+    }
 }

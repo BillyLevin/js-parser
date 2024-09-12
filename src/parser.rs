@@ -3,8 +3,8 @@ use crate::{
         AssignmentExpression, AssignmentOperator, BinaryExpression, BinaryOperator, BlockStatement,
         BooleanLiteral, BreakStatement, ContinueStatement, Declaration, Expression, Identifier,
         LabeledStatement, Literal, LogicalExpression, LogicalOperator, NumberLiteral, Operator,
-        Pattern, Program, RegExp, RegExpLiteral, Statement, StringLiteral, VariableDeclaration,
-        VariableDeclarationKind, VariableDeclarator,
+        Pattern, Program, RegExp, RegExpLiteral, Statement, StringLiteral, UnaryExpression,
+        UnaryOperator, VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
     },
     lexer::{token::Token, Lexer},
     precedence::Precedence,
@@ -133,7 +133,7 @@ impl<'src> Parser<'src> {
     }
 
     fn parse_binary_expression(&mut self, min_precedence: Precedence) -> ParseResult<Expression> {
-        let mut lhs = self.parse_primary_expression()?;
+        let mut lhs = self.parse_unary_expression()?;
 
         loop {
             let Ok(precedence) = Precedence::try_from(&self.current_token) else {
@@ -184,6 +184,22 @@ impl<'src> Parser<'src> {
         }
 
         Ok(lhs)
+    }
+
+    /// https://tc39.es/ecma262/#prod-UnaryExpression
+    fn parse_unary_expression(&mut self) -> ParseResult<Expression> {
+        if self.current_token.is_unary_operator() {
+            let operator = UnaryOperator::from(&self.current_token);
+            self.next_token();
+            let argument = self.parse_primary_expression()?;
+            Ok(Expression::UnaryExpression(Box::new(UnaryExpression {
+                argument,
+                operator,
+                prefix: true,
+            })))
+        } else {
+            self.parse_primary_expression()
+        }
     }
 
     fn parse_primary_expression(&mut self) -> ParseResult<Expression> {
@@ -385,8 +401,8 @@ mod tests {
             AssignmentExpression, AssignmentOperator, BinaryExpression, BinaryOperator,
             BlockStatement, BooleanLiteral, BreakStatement, ContinueStatement, Declaration,
             Expression, Identifier, LabeledStatement, Literal, LogicalExpression, LogicalOperator,
-            NumberLiteral, Pattern, Statement, StringLiteral, VariableDeclaration,
-            VariableDeclarationKind, VariableDeclarator,
+            NumberLiteral, Pattern, Statement, StringLiteral, UnaryExpression, UnaryOperator,
+            VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
         },
         lexer::RegularExpressionFlags,
     };
@@ -419,6 +435,16 @@ mod tests {
                 left: $left,
                 right: $right,
                 operator: AssignmentOperator::$op,
+            }))
+        };
+    }
+
+    macro_rules! unary_expr {
+        ($arg:expr, $op:ident) => {
+            Expression::UnaryExpression(Box::new(UnaryExpression {
+                argument: $arg,
+                operator: UnaryOperator::$op,
+                prefix: true,
             }))
         };
     }
@@ -512,6 +538,7 @@ mod tests {
             var a = b <<= c >>= d >>>= 27;
             var a = b |= c &= d ^= 34;
             var a = b **= c ||= d &&= e ??= "hello";
+            var a = -b;
         "#;
 
         let lexer = Lexer::new(input);
@@ -1247,6 +1274,16 @@ mod tests {
                             ),
                             Exponentiation
                         ))
+                    }]
+                })),
+                // var a = -b;
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "a".to_string()
+                        }),
+                        init: Some(unary_expr!(ident_expr!("b"), Minus))
                     }]
                 })),
             ]
