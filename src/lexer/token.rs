@@ -338,4 +338,8 @@ impl Token {
                 | Token::Delete
         )
     }
+
+    pub fn is_update_operator(&self) -> bool {
+        matches!(self, Token::PlusPlus | Token::MinusMinus)
+    }
 }

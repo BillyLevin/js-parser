@@ -86,6 +86,7 @@ pub enum Expression {
     LogicalExpression(Box<LogicalExpression>),
     AssignmentExpression(Box<AssignmentExpression>),
     UnaryExpression(Box<UnaryExpression>),
+    UpdateExpression(Box<UpdateExpression>),
     Identifier(Identifier),
 }
 
@@ -383,6 +384,33 @@ impl From<&Token> for UnaryOperator {
            Token::Void => UnaryOperator::Void, 
            Token::Delete => UnaryOperator::Delete, 
             _ => unreachable!("this function should only be called with tokens that can be mapped to an unary operation"),
+        }
+    }
+}
+
+/// https://github.com/estree/estree/blob/master/es5.md#updateexpression
+#[derive(Debug, PartialEq)]
+pub struct UpdateExpression {
+    pub argument: Expression,
+    pub operator: UpdateOperator,
+    pub prefix: bool,
+}
+
+/// https://github.com/estree/estree/blob/master/es5.md#updateoperator
+#[derive(Debug, PartialEq)]
+pub enum UpdateOperator {
+    /// `++`
+    Increment,
+    /// `--`
+    Decrement,
+}
+
+impl From<&Token> for UpdateOperator {
+    fn from(token: &Token) -> Self {
+        match token {
+            Token::PlusPlus => UpdateOperator::Increment,
+            Token::MinusMinus => UpdateOperator::Decrement,
+            _ => unreachable!("this function should only be called with tokens that can be mapped to an update operation"),
         }
     }
 }

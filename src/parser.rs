@@ -4,7 +4,8 @@ use crate::{
         BooleanLiteral, BreakStatement, ContinueStatement, Declaration, Expression, Identifier,
         LabeledStatement, Literal, LogicalExpression, LogicalOperator, NumberLiteral, Operator,
         Pattern, Program, RegExp, RegExpLiteral, Statement, StringLiteral, UnaryExpression,
-        UnaryOperator, VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
+        UnaryOperator, UpdateExpression, UpdateOperator, VariableDeclaration,
+        VariableDeclarationKind, VariableDeclarator,
     },
     lexer::{token::Token, Lexer},
     precedence::Precedence,
@@ -193,6 +194,22 @@ impl<'src> Parser<'src> {
             self.next_token();
             let argument = self.parse_primary_expression()?;
             Ok(Expression::UnaryExpression(Box::new(UnaryExpression {
+                argument,
+                operator,
+                prefix: true,
+            })))
+        } else {
+            self.parse_update_expression()
+        }
+    }
+
+    /// https://tc39.es/ecma262/#prod-UpdateExpression
+    fn parse_update_expression(&mut self) -> ParseResult<Expression> {
+        if self.current_token.is_update_operator() {
+            let operator = UpdateOperator::from(&self.current_token);
+            self.next_token();
+            let argument = self.parse_unary_expression()?;
+            Ok(Expression::UpdateExpression(Box::new(UpdateExpression {
                 argument,
                 operator,
                 prefix: true,
@@ -402,7 +419,8 @@ mod tests {
             BlockStatement, BooleanLiteral, BreakStatement, ContinueStatement, Declaration,
             Expression, Identifier, LabeledStatement, Literal, LogicalExpression, LogicalOperator,
             NumberLiteral, Pattern, Statement, StringLiteral, UnaryExpression, UnaryOperator,
-            VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
+            UpdateExpression, UpdateOperator, VariableDeclaration, VariableDeclarationKind,
+            VariableDeclarator,
         },
         lexer::RegularExpressionFlags,
     };
@@ -444,6 +462,16 @@ mod tests {
             Expression::UnaryExpression(Box::new(UnaryExpression {
                 argument: $arg,
                 operator: UnaryOperator::$op,
+                prefix: true,
+            }))
+        };
+    }
+
+    macro_rules! update_expr {
+        ($arg:expr, $op:ident, $prefix:literal) => {
+            Expression::UpdateExpression(Box::new(UpdateExpression {
+                argument: $arg,
+                operator: UpdateOperator::$op,
                 prefix: true,
             }))
         };
@@ -548,6 +576,7 @@ mod tests {
             var a = b + -c * ~d === typeof e;
             var a = !b / +c - -d > void e;
             var a = +b > -c && ~d <= !e;
+            var a = ++b + --c * ++d;
         "#;
 
         let lexer = Lexer::new(input);
@@ -1408,6 +1437,23 @@ mod tests {
                                 LessThanEqual
                             ),
                             And
+                        ))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "a".to_string()
+                        }),
+                        init: Some(binary_expr!(
+                            update_expr!(ident_expr!("b"), Increment, true),
+                            binary_expr!(
+                                update_expr!(ident_expr!("c"), Decrement, true),
+                                update_expr!(ident_expr!("d"), Increment, true),
+                                Multiply
+                            ),
+                            Plus
                         ))
                     }]
                 })),
