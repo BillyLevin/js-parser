@@ -192,7 +192,7 @@ impl<'src> Parser<'src> {
         if self.current_token.is_unary_operator() {
             let operator = UnaryOperator::from(&self.current_token);
             self.next_token();
-            let argument = self.parse_primary_expression()?;
+            let argument = self.parse_unary_expression()?;
             Ok(Expression::UnaryExpression(Box::new(UnaryExpression {
                 argument,
                 operator,
@@ -215,7 +215,19 @@ impl<'src> Parser<'src> {
                 prefix: true,
             })))
         } else {
-            self.parse_primary_expression()
+            let lhs = self.parse_primary_expression()?;
+
+            if self.current_token.is_update_operator() {
+                let operator = UpdateOperator::from(&self.current_token);
+                self.next_token();
+                Ok(Expression::UpdateExpression(Box::new(UpdateExpression {
+                    argument: lhs,
+                    operator,
+                    prefix: false,
+                })))
+            } else {
+                Ok(lhs)
+            }
         }
     }
 
@@ -472,7 +484,7 @@ mod tests {
             Expression::UpdateExpression(Box::new(UpdateExpression {
                 argument: $arg,
                 operator: UpdateOperator::$op,
-                prefix: true,
+                prefix: $prefix,
             }))
         };
     }
@@ -577,6 +589,8 @@ mod tests {
             var a = !b / +c - -d > void e;
             var a = +b > -c && ~d <= !e;
             var a = ++b + --c * ++d;
+            var a = b-- / c++ - d--;
+            var a = typeof b++ >= ~--c % d--;
         "#;
 
         let lexer = Lexer::new(input);
@@ -1454,6 +1468,44 @@ mod tests {
                                 Multiply
                             ),
                             Plus
+                        ))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "a".to_string()
+                        }),
+                        init: Some(binary_expr!(
+                            binary_expr!(
+                                update_expr!(ident_expr!("b"), Decrement, false),
+                                update_expr!(ident_expr!("c"), Increment, false),
+                                Divide
+                            ),
+                            update_expr!(ident_expr!("d"), Decrement, false),
+                            Minus
+                        ))
+                    }]
+                })),
+                // var a = typeof b++ >= ~--c % d--;
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "a".to_string()
+                        }),
+                        init: Some(binary_expr!(
+                            unary_expr!(update_expr!(ident_expr!("b"), Increment, false), Typeof),
+                            binary_expr!(
+                                unary_expr!(
+                                    update_expr!(ident_expr!("c"), Decrement, true),
+                                    BitwiseNot
+                                ),
+                                update_expr!(ident_expr!("d"), Decrement, false),
+                                Remainder
+                            ),
+                            GreaterThanEqual
                         ))
                     }]
                 })),
