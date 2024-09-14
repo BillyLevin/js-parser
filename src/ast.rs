@@ -88,6 +88,7 @@ pub enum Expression {
     UnaryExpression(Box<UnaryExpression>),
     UpdateExpression(Box<UpdateExpression>),
     Identifier(Identifier),
+    ThisExpression(ThisExpression),
 }
 
 /// https://github.com/estree/estree/blob/master/es5.md#literal
@@ -414,3 +415,7 @@ impl From<&Token> for UpdateOperator {
         }
     }
 }
+
+/// https://github.com/estree/estree/blob/master/es5.md#thisexpression
+#[derive(Debug, PartialEq)]
+pub struct ThisExpression;

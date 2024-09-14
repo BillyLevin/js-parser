@@ -3,8 +3,8 @@ use crate::{
         AssignmentExpression, AssignmentOperator, BinaryExpression, BinaryOperator, BlockStatement,
         BooleanLiteral, BreakStatement, ContinueStatement, Declaration, Expression, Identifier,
         LabeledStatement, Literal, LogicalExpression, LogicalOperator, NumberLiteral, Operator,
-        Pattern, Program, RegExp, RegExpLiteral, Statement, StringLiteral, UnaryExpression,
-        UnaryOperator, UpdateExpression, UpdateOperator, VariableDeclaration,
+        Pattern, Program, RegExp, RegExpLiteral, Statement, StringLiteral, ThisExpression,
+        UnaryExpression, UnaryOperator, UpdateExpression, UpdateOperator, VariableDeclaration,
         VariableDeclarationKind, VariableDeclarator,
     },
     lexer::{token::Token, Lexer},
@@ -264,6 +264,7 @@ impl<'src> Parser<'src> {
             }
             Token::Divide | Token::DivideEqual => self.parse_regular_expression_literal(),
             Token::Identifier(_) => self.parse_identifier_expression(),
+            Token::This => Ok(Expression::ThisExpression(ThisExpression)),
             _ => Err(()),
         };
 
@@ -430,9 +431,9 @@ mod tests {
             AssignmentExpression, AssignmentOperator, BinaryExpression, BinaryOperator,
             BlockStatement, BooleanLiteral, BreakStatement, ContinueStatement, Declaration,
             Expression, Identifier, LabeledStatement, Literal, LogicalExpression, LogicalOperator,
-            NumberLiteral, Pattern, Statement, StringLiteral, UnaryExpression, UnaryOperator,
-            UpdateExpression, UpdateOperator, VariableDeclaration, VariableDeclarationKind,
-            VariableDeclarator,
+            NumberLiteral, Pattern, Statement, StringLiteral, ThisExpression, UnaryExpression,
+            UnaryOperator, UpdateExpression, UpdateOperator, VariableDeclaration,
+            VariableDeclarationKind, VariableDeclarator,
         },
         lexer::RegularExpressionFlags,
     };
@@ -591,6 +592,7 @@ mod tests {
             var a = ++b + --c * ++d;
             var a = b-- / c++ - d--;
             var a = typeof b++ >= ~--c % d--;
+            var a = this;
         "#;
 
         let lexer = Lexer::new(input);
@@ -1507,6 +1509,15 @@ mod tests {
                             ),
                             GreaterThanEqual
                         ))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "a".to_string()
+                        }),
+                        init: Some(Expression::ThisExpression(ThisExpression))
                     }]
                 })),
             ]
