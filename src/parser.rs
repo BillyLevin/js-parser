@@ -241,14 +241,6 @@ impl<'src> Parser<'src> {
             | Token::LegacyOctal(_) => self.parse_number_literal(),
             Token::True | Token::False => self.parse_boolean_literal(),
             Token::Null => self.parse_null_literal(),
-            Token::RegularExpression { body, flags } => {
-                Ok(Expression::Literal(Literal::RegExpLiteral(RegExpLiteral {
-                    regex: RegExp {
-                        pattern: body.to_string(),
-                        flags: flags.clone(),
-                    },
-                })))
-            }
             Token::Divide | Token::DivideEqual => self.parse_regular_expression_literal(),
             Token::Identifier(_) => self.parse_identifier_expression(),
             Token::This => self.parse_this_expression(),
@@ -472,21 +464,16 @@ impl<'src> Parser<'src> {
     fn parse_regular_expression_literal(&mut self) -> ParseResult<Expression> {
         let regex = self.lexer.read_regex(self.current_token.clone());
 
-        let Token::RegularExpression {
-            ref body,
-            ref flags,
-        } = regex
-        else {
+        let Token::RegularExpression { body, flags } = regex else {
             return Err(());
         };
 
-        self.current_token = regex.clone();
         self.next_token();
 
         Ok(Expression::Literal(Literal::RegExpLiteral(RegExpLiteral {
             regex: RegExp {
-                pattern: body.to_string(),
-                flags: flags.clone(),
+                pattern: body,
+                flags,
             },
         })))
     }
