@@ -4,8 +4,9 @@ use crate::{
         BinaryOperator, BlockStatement, BooleanLiteral, BreakStatement, ContinueStatement,
         Declaration, Expression, Identifier, LabeledStatement, Literal, LogicalExpression,
         LogicalOperator, NumberLiteral, Operator, Pattern, Program, RegExp, RegExpLiteral,
-        Statement, StringLiteral, ThisExpression, UnaryExpression, UnaryOperator, UpdateExpression,
-        UpdateOperator, VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
+        SpreadElement, Statement, StringLiteral, ThisExpression, UnaryExpression, UnaryOperator,
+        UpdateExpression, UpdateOperator, VariableDeclaration, VariableDeclarationKind,
+        VariableDeclarator,
     },
     lexer::{token::Token, Lexer},
     precedence::Precedence,
@@ -85,10 +86,9 @@ impl<'src> Parser<'src> {
 
             if self.current_token == Token::Comma {
                 self.next_token();
-                continue;
+            } else {
+                break;
             }
-
-            break;
         }
 
         self.eat_or_insert_semicolon();
@@ -232,28 +232,15 @@ impl<'src> Parser<'src> {
     }
 
     fn parse_primary_expression(&mut self) -> ParseResult<Expression> {
-        let lhs = match &self.current_token {
-            Token::String(value) => {
-                Ok(Expression::Literal(Literal::StringLiteral(StringLiteral {
-                    value: value.to_string(),
-                })))
-            }
-            Token::Decimal(value)
-            | Token::Binary(value)
-            | Token::Octal(value)
-            | Token::Hex(value)
-            | Token::LegacyOctal(value) => {
-                Ok(Expression::Literal(Literal::NumberLiteral(NumberLiteral {
-                    value: *value,
-                })))
-            }
-            Token::True => Ok(Expression::Literal(Literal::BooleanLiteral(
-                BooleanLiteral { value: true },
-            ))),
-            Token::False => Ok(Expression::Literal(Literal::BooleanLiteral(
-                BooleanLiteral { value: false },
-            ))),
-            Token::Null => Ok(Expression::Literal(Literal::NullLiteral)),
+        match &self.current_token {
+            Token::String(_) => self.parse_string_literal(),
+            Token::Decimal(_)
+            | Token::Binary(_)
+            | Token::Octal(_)
+            | Token::Hex(_)
+            | Token::LegacyOctal(_) => self.parse_number_literal(),
+            Token::True | Token::False => self.parse_boolean_literal(),
+            Token::Null => self.parse_null_literal(),
             Token::RegularExpression { body, flags } => {
                 Ok(Expression::Literal(Literal::RegExpLiteral(RegExpLiteral {
                     regex: RegExp {
@@ -264,14 +251,55 @@ impl<'src> Parser<'src> {
             }
             Token::Divide | Token::DivideEqual => self.parse_regular_expression_literal(),
             Token::Identifier(_) => self.parse_identifier_expression(),
-            Token::This => Ok(Expression::ThisExpression(ThisExpression)),
+            Token::This => self.parse_this_expression(),
             Token::LeftBracket => self.parse_array_expression(),
             _ => Err(()),
+        }
+    }
+
+    fn parse_string_literal(&mut self) -> ParseResult<Expression> {
+        let Token::String(ref value) = self.current_token else {
+            return Err(());
+        };
+
+        let value = value.to_string();
+
+        self.next_token();
+
+        Ok(Expression::Literal(Literal::StringLiteral(StringLiteral {
+            value,
+        })))
+    }
+
+    fn parse_number_literal(&mut self) -> ParseResult<Expression> {
+        let (Token::Decimal(value)
+        | Token::Binary(value)
+        | Token::Octal(value)
+        | Token::Hex(value)
+        | Token::LegacyOctal(value)) = self.current_token
+        else {
+            return Err(());
         };
 
         self.next_token();
 
-        lhs
+        Ok(Expression::Literal(Literal::NumberLiteral(NumberLiteral {
+            value,
+        })))
+    }
+
+    fn parse_boolean_literal(&mut self) -> ParseResult<Expression> {
+        let value = match self.current_token {
+            Token::True => true,
+            Token::False => false,
+            _ => return Err(()),
+        };
+
+        self.next_token();
+
+        Ok(Expression::Literal(Literal::BooleanLiteral(
+            BooleanLiteral { value },
+        )))
     }
 
     /// https://tc39.es/ecma262/#prod-ArrayLiteral
@@ -285,8 +313,22 @@ impl<'src> Parser<'src> {
                 break;
             }
 
+            let mut is_spread = false;
+
+            if matches!(self.current_token, Token::DotDotDot) {
+                is_spread = true;
+                self.next_token();
+            }
+
             let expr = self.parse_assignment_expression()?;
-            elements.push(Some(ArrayElement::Expression(expr)));
+
+            let array_element = if is_spread {
+                ArrayElement::SpreadElement(SpreadElement { argument: expr })
+            } else {
+                ArrayElement::Expression(expr)
+            };
+
+            elements.push(Some(array_element));
 
             if matches!(self.current_token, Token::Comma) {
                 self.next_token();
@@ -302,14 +344,28 @@ impl<'src> Parser<'src> {
         })))
     }
 
-    fn parse_identifier_expression(&self) -> ParseResult<Expression> {
-        let Token::Identifier(ref identifier) = self.current_token else {
+    fn parse_identifier_expression(&mut self) -> ParseResult<Expression> {
+        let Token::Identifier(identifier) = &self.current_token else {
             return Err(());
         };
 
-        Ok(Expression::Identifier(Identifier {
-            name: identifier.to_string(),
-        }))
+        let name = identifier.to_string();
+
+        self.next_token();
+
+        Ok(Expression::Identifier(Identifier { name }))
+    }
+
+    fn parse_this_expression(&mut self) -> ParseResult<Expression> {
+        self.expect_current(Token::This)?;
+
+        Ok(Expression::ThisExpression(ThisExpression))
+    }
+
+    fn parse_null_literal(&mut self) -> ParseResult<Expression> {
+        self.expect_current(Token::Null)?;
+
+        Ok(Expression::Literal(Literal::NullLiteral))
     }
 
     fn parse_debugger_statement(&mut self) -> ParseResult<Statement> {
@@ -375,7 +431,7 @@ impl<'src> Parser<'src> {
         let mut statement_list = Vec::new();
 
         loop {
-            if self.current_token == Token::RightBrace || self.current_token == Token::Eof {
+            if matches!(self.current_token, Token::RightBrace | Token::Eof) {
                 break;
             }
 
@@ -416,14 +472,21 @@ impl<'src> Parser<'src> {
     fn parse_regular_expression_literal(&mut self) -> ParseResult<Expression> {
         let regex = self.lexer.read_regex(self.current_token.clone());
 
-        let Token::RegularExpression { body, flags } = regex else {
+        let Token::RegularExpression {
+            ref body,
+            ref flags,
+        } = regex
+        else {
             return Err(());
         };
 
+        self.current_token = regex.clone();
+        self.next_token();
+
         Ok(Expression::Literal(Literal::RegExpLiteral(RegExpLiteral {
             regex: RegExp {
-                pattern: body,
-                flags,
+                pattern: body.to_string(),
+                flags: flags.clone(),
             },
         })))
     }
@@ -460,9 +523,9 @@ mod tests {
             ArrayElement, ArrayExpression, AssignmentExpression, AssignmentOperator,
             BinaryExpression, BinaryOperator, BlockStatement, BooleanLiteral, BreakStatement,
             ContinueStatement, Declaration, Expression, Identifier, LabeledStatement, Literal,
-            LogicalExpression, LogicalOperator, NumberLiteral, Pattern, Statement, StringLiteral,
-            ThisExpression, UnaryExpression, UnaryOperator, UpdateExpression, UpdateOperator,
-            VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
+            LogicalExpression, LogicalOperator, NumberLiteral, Pattern, SpreadElement, Statement,
+            StringLiteral, ThisExpression, UnaryExpression, UnaryOperator, UpdateExpression,
+            UpdateOperator, VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
         },
         lexer::RegularExpressionFlags,
     };
@@ -558,6 +621,14 @@ mod tests {
         };
     }
 
+    macro_rules! array_spread_element {
+        ($expr:expr) => {
+            Some(ArrayElement::SpreadElement(SpreadElement {
+                argument: $expr,
+            }))
+        };
+    }
+
     #[test]
     fn parse_variable_statement() {
         let input = r#"
@@ -645,6 +716,16 @@ mod tests {
               --b,
               null,
               undefined
+            ];
+            var arr = [
+              ...spread1,
+              2,
+              "hello",
+              false,
+              ...spread2,
+              ...spread3,
+              4 ** 7,
+              ...[1, 2]
             ];
         "#;
 
@@ -1635,6 +1716,47 @@ mod tests {
                                 )),
                                 array_expr_element!(literal_expr!(null)),
                                 array_expr_element!(ident_expr!("undefined")),
+                            ]
+                        })))
+                    }]
+                })),
+                // var arr = [
+                //   ...spread1,
+                //   2,
+                //   "hello",
+                //   false,
+                //   ...spread2,
+                //   ...spread3,
+                //   4 ** 7,
+                //   ...[1, 2]
+                // ];
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "arr".to_string()
+                        }),
+                        init: Some(Expression::ArrayExpression(Box::new(ArrayExpression {
+                            elements: vec![
+                                array_spread_element!(ident_expr!("spread1")),
+                                array_expr_element!(literal_expr!(2)),
+                                array_expr_element!(literal_expr!("hello")),
+                                array_expr_element!(literal_expr!(false)),
+                                array_spread_element!(ident_expr!("spread2")),
+                                array_spread_element!(ident_expr!("spread3")),
+                                array_expr_element!(binary_expr!(
+                                    literal_expr!(4),
+                                    literal_expr!(7),
+                                    Exponentiation
+                                )),
+                                array_spread_element!(Expression::ArrayExpression(Box::new(
+                                    ArrayExpression {
+                                        elements: vec![
+                                            array_expr_element!(literal_expr!(1)),
+                                            array_expr_element!(literal_expr!(2))
+                                        ]
+                                    }
+                                )))
                             ]
                         })))
                     }]
