@@ -725,7 +725,7 @@ mod tests {
               ...spread2,
               ...spread3,
               4 ** 7,
-              ...[1, 2]
+              ...[1, 2, ...["hello", false, 2 + ~2]]
             ];
         "#;
 
@@ -1720,16 +1720,6 @@ mod tests {
                         })))
                     }]
                 })),
-                // var arr = [
-                //   ...spread1,
-                //   2,
-                //   "hello",
-                //   false,
-                //   ...spread2,
-                //   ...spread3,
-                //   4 ** 7,
-                //   ...[1, 2]
-                // ];
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
@@ -1753,7 +1743,23 @@ mod tests {
                                     ArrayExpression {
                                         elements: vec![
                                             array_expr_element!(literal_expr!(1)),
-                                            array_expr_element!(literal_expr!(2))
+                                            array_expr_element!(literal_expr!(2)),
+                                            array_spread_element!(Expression::ArrayExpression(
+                                                Box::new(ArrayExpression {
+                                                    elements: vec![
+                                                        array_expr_element!(literal_expr!("hello")),
+                                                        array_expr_element!(literal_expr!(false)),
+                                                        array_expr_element!(binary_expr!(
+                                                            literal_expr!(2),
+                                                            unary_expr!(
+                                                                literal_expr!(2),
+                                                                BitwiseNot
+                                                            ),
+                                                            Plus
+                                                        )),
+                                                    ]
+                                                })
+                                            ))
                                         ]
                                     }
                                 )))
