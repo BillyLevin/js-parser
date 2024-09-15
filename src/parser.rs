@@ -1,11 +1,11 @@
 use crate::{
     ast::{
-        AssignmentExpression, AssignmentOperator, BinaryExpression, BinaryOperator, BlockStatement,
-        BooleanLiteral, BreakStatement, ContinueStatement, Declaration, Expression, Identifier,
-        LabeledStatement, Literal, LogicalExpression, LogicalOperator, NumberLiteral, Operator,
-        Pattern, Program, RegExp, RegExpLiteral, Statement, StringLiteral, ThisExpression,
-        UnaryExpression, UnaryOperator, UpdateExpression, UpdateOperator, VariableDeclaration,
-        VariableDeclarationKind, VariableDeclarator,
+        ArrayElement, ArrayExpression, AssignmentExpression, AssignmentOperator, BinaryExpression,
+        BinaryOperator, BlockStatement, BooleanLiteral, BreakStatement, ContinueStatement,
+        Declaration, Expression, Identifier, LabeledStatement, Literal, LogicalExpression,
+        LogicalOperator, NumberLiteral, Operator, Pattern, Program, RegExp, RegExpLiteral,
+        Statement, StringLiteral, ThisExpression, UnaryExpression, UnaryOperator, UpdateExpression,
+        UpdateOperator, VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
     },
     lexer::{token::Token, Lexer},
     precedence::Precedence,
@@ -265,12 +265,43 @@ impl<'src> Parser<'src> {
             Token::Divide | Token::DivideEqual => self.parse_regular_expression_literal(),
             Token::Identifier(_) => self.parse_identifier_expression(),
             Token::This => Ok(Expression::ThisExpression(ThisExpression)),
+            Token::LeftBracket => self.parse_array_expression(),
             _ => Err(()),
         };
 
         self.next_token();
 
         lhs
+    }
+
+    /// https://tc39.es/ecma262/#prod-ArrayLiteral
+    fn parse_array_expression(&mut self) -> ParseResult<Expression> {
+        self.expect_current(Token::LeftBracket)?;
+
+        let mut elements = Vec::new();
+
+        loop {
+            if matches!(self.current_token, Token::RightBracket) {
+                break;
+            }
+
+            let expr = self.parse_assignment_expression()?;
+            match expr {
+                Expression::Literal(Literal::NullLiteral) => elements.push(None),
+                _ => elements.push(Some(ArrayElement::Expression(expr))),
+            }
+            if matches!(self.current_token, Token::Comma) {
+                self.next_token();
+            } else {
+                break;
+            }
+        }
+
+        self.expect_current(Token::RightBracket)?;
+
+        Ok(Expression::ArrayExpression(Box::new(ArrayExpression {
+            elements,
+        })))
     }
 
     fn parse_identifier_expression(&self) -> ParseResult<Expression> {
@@ -428,12 +459,12 @@ impl<'src> Parser<'src> {
 mod tests {
     use crate::{
         ast::{
-            AssignmentExpression, AssignmentOperator, BinaryExpression, BinaryOperator,
-            BlockStatement, BooleanLiteral, BreakStatement, ContinueStatement, Declaration,
-            Expression, Identifier, LabeledStatement, Literal, LogicalExpression, LogicalOperator,
-            NumberLiteral, Pattern, Statement, StringLiteral, ThisExpression, UnaryExpression,
-            UnaryOperator, UpdateExpression, UpdateOperator, VariableDeclaration,
-            VariableDeclarationKind, VariableDeclarator,
+            ArrayElement, ArrayExpression, AssignmentExpression, AssignmentOperator,
+            BinaryExpression, BinaryOperator, BlockStatement, BooleanLiteral, BreakStatement,
+            ContinueStatement, Declaration, Expression, Identifier, LabeledStatement, Literal,
+            LogicalExpression, LogicalOperator, NumberLiteral, Pattern, Statement, StringLiteral,
+            ThisExpression, UnaryExpression, UnaryOperator, UpdateExpression, UpdateOperator,
+            VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
         },
         lexer::RegularExpressionFlags,
     };
@@ -523,6 +554,12 @@ mod tests {
         };
     }
 
+    macro_rules! array_expr_element {
+        ($expr:expr) => {
+            Some(ArrayElement::Expression($expr))
+        };
+    }
+
     #[test]
     fn parse_variable_statement() {
         let input = r#"
@@ -593,6 +630,23 @@ mod tests {
             var a = b-- / c++ - d--;
             var a = typeof b++ >= ~--c % d--;
             var a = this;
+            var arr = [];
+            var arr = [
+              1,
+              2,
+              3,
+              true,
+              "hello",
+              6 * 7,
+              ~22,
+              thing / 4,
+              false && "fallback",
+              -7 % 3,
+              2 ** 4,
+              a++,
+              --b,
+              null,
+            ];
         "#;
 
         let lexer = Lexer::new(input);
@@ -1518,6 +1572,72 @@ mod tests {
                             name: "a".to_string()
                         }),
                         init: Some(Expression::ThisExpression(ThisExpression))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "arr".to_string()
+                        }),
+                        init: Some(Expression::ArrayExpression(Box::new(ArrayExpression {
+                            elements: vec![]
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "arr".to_string()
+                        }),
+                        init: Some(Expression::ArrayExpression(Box::new(ArrayExpression {
+                            elements: vec![
+                                array_expr_element!(literal_expr!(1)),
+                                array_expr_element!(literal_expr!(2)),
+                                array_expr_element!(literal_expr!(3)),
+                                array_expr_element!(literal_expr!(true)),
+                                array_expr_element!(literal_expr!("hello")),
+                                array_expr_element!(binary_expr!(
+                                    literal_expr!(6),
+                                    literal_expr!(7),
+                                    Multiply
+                                )),
+                                array_expr_element!(unary_expr!(literal_expr!(22), BitwiseNot)),
+                                array_expr_element!(binary_expr!(
+                                    ident_expr!("thing"),
+                                    literal_expr!(4),
+                                    Divide
+                                )),
+                                array_expr_element!(logical_expr!(
+                                    literal_expr!(false),
+                                    literal_expr!("fallback"),
+                                    And
+                                )),
+                                array_expr_element!(binary_expr!(
+                                    unary_expr!(literal_expr!(7), Minus),
+                                    literal_expr!(3),
+                                    Remainder
+                                )),
+                                array_expr_element!(binary_expr!(
+                                    literal_expr!(2),
+                                    literal_expr!(4),
+                                    Exponentiation
+                                )),
+                                array_expr_element!(update_expr!(
+                                    ident_expr!("a"),
+                                    Increment,
+                                    false
+                                )),
+                                array_expr_element!(update_expr!(
+                                    ident_expr!("b"),
+                                    Decrement,
+                                    true
+                                )),
+                                None,
+                                // array_expr_element!(ident_expr!("undefined")),
+                            ]
+                        })))
                     }]
                 })),
             ]

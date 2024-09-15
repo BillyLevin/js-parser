@@ -89,6 +89,7 @@ pub enum Expression {
     UpdateExpression(Box<UpdateExpression>),
     Identifier(Identifier),
     ThisExpression(ThisExpression),
+    ArrayExpression(Box<ArrayExpression>),
 }
 
 /// https://github.com/estree/estree/blob/master/es5.md#literal
@@ -419,3 +420,22 @@ impl From<&Token> for UpdateOperator {
 /// https://github.com/estree/estree/blob/master/es5.md#thisexpression
 #[derive(Debug, PartialEq)]
 pub struct ThisExpression;
+
+/// https://github.com/estree/estree/blob/master/es5.md#arrayexpression
+#[derive(Debug, PartialEq)]
+pub struct ArrayExpression {
+    pub elements: Vec<Option<ArrayElement>>,
+}
+
+/// ES2015 introduced `SpreadElement` as an additional array element variant: https://github.com/estree/estree/blob/master/es2015.md#expressions
+#[derive(Debug, PartialEq)]
+pub enum ArrayElement {
+    Expression(Expression),
+    SpreadElement(SpreadElement),
+}
+
+/// https://github.com/estree/estree/blob/master/es2015.md#expressions
+#[derive(Debug, PartialEq)]
+pub struct SpreadElement {
+    pub argument: Expression,
+}
