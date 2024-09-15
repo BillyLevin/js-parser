@@ -286,10 +286,8 @@ impl<'src> Parser<'src> {
             }
 
             let expr = self.parse_assignment_expression()?;
-            match expr {
-                Expression::Literal(Literal::NullLiteral) => elements.push(None),
-                _ => elements.push(Some(ArrayElement::Expression(expr))),
-            }
+            elements.push(Some(ArrayElement::Expression(expr)));
+
             if matches!(self.current_token, Token::Comma) {
                 self.next_token();
             } else {
@@ -646,6 +644,7 @@ mod tests {
               a++,
               --b,
               null,
+              undefined
             ];
         "#;
 
@@ -1634,8 +1633,8 @@ mod tests {
                                     Decrement,
                                     true
                                 )),
-                                None,
-                                // array_expr_element!(ident_expr!("undefined")),
+                                array_expr_element!(literal_expr!(null)),
+                                array_expr_element!(ident_expr!("undefined")),
                             ]
                         })))
                     }]
