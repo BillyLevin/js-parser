@@ -305,6 +305,12 @@ impl<'src> Parser<'src> {
                 break;
             }
 
+            if matches!(self.current_token, Token::Comma) {
+                elements.push(None);
+                self.next_token();
+                continue;
+            }
+
             let mut is_spread = false;
 
             if matches!(self.current_token, Token::DotDotDot) {
@@ -713,6 +719,16 @@ mod tests {
               ...spread3,
               4 ** 7,
               ...[1, 2, ...["hello", false, 2 + ~2]]
+            ];
+            var arr = [
+                ,,
+                item,
+                ...spread1,
+                2 ** 4,
+                true && "thing",
+                false || "fallback",
+                ,
+                ...[, ...spread2,,],
             ];
         "#;
 
@@ -1750,6 +1766,47 @@ mod tests {
                                         ]
                                     }
                                 )))
+                            ]
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "arr".to_string()
+                        }),
+                        init: Some(Expression::ArrayExpression(Box::new(ArrayExpression {
+                            elements: vec![
+                                None,
+                                None,
+                                array_expr_element!(ident_expr!("item")),
+                                array_spread_element!(ident_expr!("spread1")),
+                                array_expr_element!(binary_expr!(
+                                    literal_expr!(2),
+                                    literal_expr!(4),
+                                    Exponentiation
+                                )),
+                                array_expr_element!(logical_expr!(
+                                    literal_expr!(true),
+                                    literal_expr!("thing"),
+                                    And
+                                )),
+                                array_expr_element!(logical_expr!(
+                                    literal_expr!(false),
+                                    literal_expr!("fallback"),
+                                    Or
+                                )),
+                                None,
+                                array_spread_element!(Expression::ArrayExpression(Box::new(
+                                    ArrayExpression {
+                                        elements: vec![
+                                            None,
+                                            array_spread_element!(ident_expr!("spread2")),
+                                            None,
+                                        ]
+                                    }
+                                ))),
                             ]
                         })))
                     }]
