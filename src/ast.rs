@@ -90,6 +90,7 @@ pub enum Expression {
     Identifier(Identifier),
     ThisExpression(ThisExpression),
     ArrayExpression(Box<ArrayExpression>),
+    ObjectExpression(Box<ObjectExpression>),
 }
 
 /// https://github.com/estree/estree/blob/master/es5.md#literal
@@ -438,4 +439,28 @@ pub enum ArrayElement {
 #[derive(Debug, PartialEq)]
 pub struct SpreadElement {
     pub argument: Expression,
+}
+
+/// https://github.com/estree/estree/blob/master/es5.md#objectexpression
+#[derive(Debug, PartialEq)]
+pub struct ObjectExpression {
+    pub properties: Vec<Property>,
+}
+
+/// https://github.com/estree/estree/blob/master/es5.md#property
+#[derive(Debug, PartialEq)]
+pub struct Property {
+    pub key: Expression,
+    pub value: Expression,
+    pub kind: PropertyKind,
+    pub method: bool,
+    pub shorthand: bool,
+    pub computed: bool,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum PropertyKind {
+    Init,
+    Get,
+    Set,
 }

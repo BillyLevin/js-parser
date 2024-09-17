@@ -3,10 +3,10 @@ use crate::{
         ArrayElement, ArrayExpression, AssignmentExpression, AssignmentOperator, BinaryExpression,
         BinaryOperator, BlockStatement, BooleanLiteral, BreakStatement, ContinueStatement,
         Declaration, Expression, Identifier, LabeledStatement, Literal, LogicalExpression,
-        LogicalOperator, NumberLiteral, Operator, Pattern, Program, RegExp, RegExpLiteral,
-        SpreadElement, Statement, StringLiteral, ThisExpression, UnaryExpression, UnaryOperator,
-        UpdateExpression, UpdateOperator, VariableDeclaration, VariableDeclarationKind,
-        VariableDeclarator,
+        LogicalOperator, NumberLiteral, ObjectExpression, Operator, Pattern, Program, Property,
+        PropertyKind, RegExp, RegExpLiteral, SpreadElement, Statement, StringLiteral,
+        ThisExpression, UnaryExpression, UnaryOperator, UpdateExpression, UpdateOperator,
+        VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
     },
     lexer::{token::Token, Lexer},
     precedence::Precedence,
@@ -245,6 +245,7 @@ impl<'src> Parser<'src> {
             Token::Identifier(_) => self.parse_identifier_expression(),
             Token::This => self.parse_this_expression(),
             Token::LeftBracket => self.parse_array_expression(),
+            Token::LeftBrace => self.parse_object_expression(),
             _ => Err(()),
         }
     }
@@ -340,6 +341,58 @@ impl<'src> Parser<'src> {
         Ok(Expression::ArrayExpression(Box::new(ArrayExpression {
             elements,
         })))
+    }
+
+    /// https://tc39.es/ecma262/#prod-ObjectLiteral
+    fn parse_object_expression(&mut self) -> ParseResult<Expression> {
+        self.expect_current(Token::LeftBrace)?;
+
+        let mut properties = Vec::new();
+
+        loop {
+            if matches!(self.current_token, Token::RightBrace) {
+                break;
+            }
+
+            let key = self.parse_object_property_name()?;
+            self.next_token();
+            let value = self.parse_assignment_expression()?;
+
+            let property = Property {
+                key,
+                value,
+                kind: PropertyKind::Init,
+                method: false,
+                shorthand: false,
+                computed: false,
+            };
+
+            properties.push(property);
+
+            if matches!(self.current_token, Token::Comma) {
+                self.next_token();
+            } else {
+                break;
+            }
+        }
+
+        self.expect_current(Token::RightBrace)?;
+
+        Ok(Expression::ObjectExpression(Box::new(ObjectExpression {
+            properties,
+        })))
+    }
+
+    fn parse_object_property_name(&mut self) -> ParseResult<Expression> {
+        match self.current_token {
+            Token::String(_) => todo!(),
+            Token::Decimal(_)
+            | Token::Binary(_)
+            | Token::Octal(_)
+            | Token::Hex(_)
+            | Token::LegacyOctal(_) => todo!(),
+            _ => self.parse_identifier_expression(),
+        }
     }
 
     fn parse_identifier_expression(&mut self) -> ParseResult<Expression> {
@@ -516,9 +569,10 @@ mod tests {
             ArrayElement, ArrayExpression, AssignmentExpression, AssignmentOperator,
             BinaryExpression, BinaryOperator, BlockStatement, BooleanLiteral, BreakStatement,
             ContinueStatement, Declaration, Expression, Identifier, LabeledStatement, Literal,
-            LogicalExpression, LogicalOperator, NumberLiteral, Pattern, SpreadElement, Statement,
-            StringLiteral, ThisExpression, UnaryExpression, UnaryOperator, UpdateExpression,
-            UpdateOperator, VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
+            LogicalExpression, LogicalOperator, NumberLiteral, ObjectExpression, Pattern, Property,
+            PropertyKind, SpreadElement, Statement, StringLiteral, ThisExpression, UnaryExpression,
+            UnaryOperator, UpdateExpression, UpdateOperator, VariableDeclaration,
+            VariableDeclarationKind, VariableDeclarator,
         },
         lexer::RegularExpressionFlags,
     };
@@ -730,7 +784,30 @@ mod tests {
                 ,
                 ...[, ...spread2,,],
             ];
+            var obj = {
+                a: true,
+                b: "hello",
+                c: 4 ** 7,
+                d: null,
+                e: undefined,
+                f: item,
+            };
         "#;
+        // var obj = {
+        //                 a: true,
+        //                 b: "hello",
+        //                 c: 4 ** 7,
+        //                 d: null,
+        //                 e: undefined,
+        //                 f: item,
+        //                 "test": true && 4,
+        //                 4: false || "fallback",
+        //                 0x3: hi,
+        //                 [computed]: true,
+        //                 ["computed2"]: 4 + 4 * 7,
+        //                 [3]: "something"
+        //                 [4 + 4]: "something else",
+        //             };
 
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
@@ -1807,6 +1884,85 @@ mod tests {
                                         ]
                                     }
                                 ))),
+                            ]
+                        })))
+                    }]
+                })),
+                //  var obj = {
+                //     a: true,
+                //     b: "hello",
+                //     c: 4 ** 7,
+                //     d: null,
+                //     e: undefined,
+                //     f: item,
+                //     "test": true && 4,
+                //     4: false || "fallback",
+                //     0x3: hi,
+                //     [computed]: true,
+                //     ["computed2"]: 4 + 4 * 7,
+                //     [3]: "something",
+                //     [4 + 4]: "something else",
+                // };
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "obj".to_string()
+                        }),
+                        init: Some(Expression::ObjectExpression(Box::new(ObjectExpression {
+                            properties: vec![
+                                Property {
+                                    key: ident_expr!("a"),
+                                    value: literal_expr!(true),
+                                    kind: PropertyKind::Init,
+                                    method: false,
+                                    shorthand: false,
+                                    computed: false,
+                                },
+                                Property {
+                                    key: ident_expr!("b"),
+                                    value: literal_expr!("hello"),
+                                    kind: PropertyKind::Init,
+                                    method: false,
+                                    shorthand: false,
+                                    computed: false,
+                                },
+                                Property {
+                                    key: ident_expr!("c"),
+                                    value: binary_expr!(
+                                        literal_expr!(4),
+                                        literal_expr!(7),
+                                        Exponentiation
+                                    ),
+                                    kind: PropertyKind::Init,
+                                    method: false,
+                                    shorthand: false,
+                                    computed: false,
+                                },
+                                Property {
+                                    key: ident_expr!("d"),
+                                    value: literal_expr!(null),
+                                    kind: PropertyKind::Init,
+                                    method: false,
+                                    shorthand: false,
+                                    computed: false,
+                                },
+                                Property {
+                                    key: ident_expr!("e"),
+                                    value: ident_expr!("undefined"),
+                                    kind: PropertyKind::Init,
+                                    method: false,
+                                    shorthand: false,
+                                    computed: false,
+                                },
+                                Property {
+                                    key: ident_expr!("f"),
+                                    value: ident_expr!("item"),
+                                    kind: PropertyKind::Init,
+                                    method: false,
+                                    shorthand: false,
+                                    computed: false,
+                                }
                             ]
                         })))
                     }]
