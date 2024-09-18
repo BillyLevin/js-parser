@@ -3,7 +3,7 @@ use js_parser::{lexer::Lexer, parser::Parser};
 fn main() {
     let input = r#"
             var obj = {
-                0x3: hi,
+                [computed]: true
             };
         "#;
 

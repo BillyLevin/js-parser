@@ -274,11 +274,7 @@ impl<'src> Parser<'src> {
             return Err(());
         };
 
-        dbg!(&self.current_token);
-
         self.next_token();
-
-        dbg!(&self.current_token);
 
         Ok(Expression::Literal(Literal::NumberLiteral(NumberLiteral {
             value,
@@ -358,7 +354,7 @@ impl<'src> Parser<'src> {
                 break;
             }
 
-            let key = self.parse_object_property_name()?;
+            let (key, computed) = self.parse_object_property_name()?;
             self.expect_current(Token::Colon)?;
             let value = self.parse_assignment_expression()?;
 
@@ -368,7 +364,7 @@ impl<'src> Parser<'src> {
                 kind: PropertyKind::Init,
                 method: false,
                 shorthand: false,
-                computed: false,
+                computed,
             };
 
             properties.push(property);
@@ -387,16 +383,27 @@ impl<'src> Parser<'src> {
         })))
     }
 
-    fn parse_object_property_name(&mut self) -> ParseResult<Expression> {
-        match self.current_token {
-            Token::String(_) => self.parse_string_literal(),
+    fn parse_object_property_name(&mut self) -> ParseResult<(Expression, bool)> {
+        let mut is_computed = false;
+
+        let property_name = match self.current_token {
+            Token::String(_) => self.parse_string_literal()?,
             Token::Decimal(_)
             | Token::Binary(_)
             | Token::Octal(_)
             | Token::Hex(_)
-            | Token::LegacyOctal(_) => self.parse_number_literal(),
-            _ => self.parse_identifier_expression(),
-        }
+            | Token::LegacyOctal(_) => self.parse_number_literal()?,
+            Token::LeftBracket => {
+                is_computed = true;
+                self.next_token();
+                let key = self.parse_assignment_expression()?;
+                self.expect_current(Token::RightBracket)?;
+                key
+            }
+            _ => self.parse_identifier_expression()?,
+        };
+
+        Ok((property_name, is_computed))
     }
 
     fn parse_identifier_expression(&mut self) -> ParseResult<Expression> {
@@ -800,14 +807,13 @@ mod tests {
                 0x3: hex,
                 0b10101: "binary",
                 0o5_67: octal,
+                [computed]: true,
+                [computed2]: 4 + 4 * 7,
+                [3]: "something",
+                [4 + 4]: "something else",
+                ["computedString"]: 87 % 3,
             };
         "#;
-        // var obj = {
-        //                 [computed]: true,
-        //                 ["computed2"]: 4 + 4 * 7,
-        //                 [3]: "something"
-        //                 [4 + 4]: "something else",
-        //             };
 
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
@@ -1888,21 +1894,6 @@ mod tests {
                         })))
                     }]
                 })),
-                //  var obj = {
-                //     a: true,
-                //     b: "hello",
-                //     c: 4 ** 7,
-                //     d: null,
-                //     e: undefined,
-                //     f: item,
-                //     "test": true && 4,
-                //     4: false || "fallback",
-                //     0x3: hi,
-                //     [computed]: true,
-                //     ["computed2"]: 4 + 4 * 7,
-                //     [3]: "something",
-                //     [4 + 4]: "something else",
-                // };
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
@@ -2010,6 +2001,54 @@ mod tests {
                                     method: false,
                                     shorthand: false,
                                     computed: false,
+                                },
+                                Property {
+                                    key: ident_expr!("computed"),
+                                    value: literal_expr!(true),
+                                    kind: PropertyKind::Init,
+                                    method: false,
+                                    shorthand: false,
+                                    computed: true,
+                                },
+                                Property {
+                                    key: ident_expr!("computed2"),
+                                    value: binary_expr!(
+                                        literal_expr!(4),
+                                        binary_expr!(literal_expr!(4), literal_expr!(7), Multiply),
+                                        Plus
+                                    ),
+                                    kind: PropertyKind::Init,
+                                    method: false,
+                                    shorthand: false,
+                                    computed: true,
+                                },
+                                Property {
+                                    key: literal_expr!(3),
+                                    value: literal_expr!("something"),
+                                    kind: PropertyKind::Init,
+                                    method: false,
+                                    shorthand: false,
+                                    computed: true,
+                                },
+                                Property {
+                                    key: binary_expr!(literal_expr!(4), literal_expr!(4), Plus),
+                                    value: literal_expr!("something else"),
+                                    kind: PropertyKind::Init,
+                                    method: false,
+                                    shorthand: false,
+                                    computed: true,
+                                },
+                                Property {
+                                    key: literal_expr!("computedString"),
+                                    value: binary_expr!(
+                                        literal_expr!(87),
+                                        literal_expr!(3),
+                                        Remainder
+                                    ),
+                                    kind: PropertyKind::Init,
+                                    method: false,
+                                    shorthand: false,
+                                    computed: true,
                                 },
                             ]
                         })))
