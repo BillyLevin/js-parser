@@ -603,14 +603,14 @@ impl<'src> Lexer<'src> {
         let mut numeric_value = 0u64;
 
         while let Some(ch) = self.current_char() {
-            self.next_char();
-
             match ch {
                 '0' => numeric_value *= 2,
                 '1' => numeric_value = numeric_value * 2 + 1,
-                '_' => continue,
+                '_' => (),
                 _ => break,
-            }
+            };
+
+            self.next_char();
         }
 
         Token::Binary(numeric_value as f64)
@@ -620,19 +620,17 @@ impl<'src> Lexer<'src> {
         let mut numeric_value = 0u64;
 
         while let Some(ch) = self.current_char() {
-            self.next_char();
-
             match ch {
                 '0'..='7' => numeric_value = numeric_value * 8 + (ch.to_digit(10).unwrap() as u64),
                 '_' => {
-                    if underscores_allowed {
-                        continue;
-                    } else {
+                    if !underscores_allowed {
                         break;
                     }
                 }
                 _ => break,
             };
+
+            self.next_char();
         }
 
         Token::Octal(numeric_value as f64)
@@ -642,15 +640,15 @@ impl<'src> Lexer<'src> {
         let mut numeric_value = 0u64;
 
         while let Some(ch) = self.current_char() {
-            self.next_char();
-
             match ch {
                 '0'..='9' => numeric_value = numeric_value * 16 + (ch.to_digit(10).unwrap() as u64),
                 'a'..='f' => numeric_value = numeric_value * 16 + (ch as u64 - 'a' as u64 + 10),
                 'A'..='F' => numeric_value = numeric_value * 16 + (ch as u64 - 'A' as u64 + 10),
-                '_' => continue,
+                '_' => (),
                 _ => break,
             };
+
+            self.next_char();
         }
 
         Token::Hex(numeric_value as f64)

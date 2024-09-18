@@ -274,7 +274,11 @@ impl<'src> Parser<'src> {
             return Err(());
         };
 
+        dbg!(&self.current_token);
+
         self.next_token();
+
+        dbg!(&self.current_token);
 
         Ok(Expression::Literal(Literal::NumberLiteral(NumberLiteral {
             value,
@@ -355,7 +359,7 @@ impl<'src> Parser<'src> {
             }
 
             let key = self.parse_object_property_name()?;
-            self.next_token();
+            self.expect_current(Token::Colon)?;
             let value = self.parse_assignment_expression()?;
 
             let property = Property {
@@ -385,12 +389,12 @@ impl<'src> Parser<'src> {
 
     fn parse_object_property_name(&mut self) -> ParseResult<Expression> {
         match self.current_token {
-            Token::String(_) => todo!(),
+            Token::String(_) => self.parse_string_literal(),
             Token::Decimal(_)
             | Token::Binary(_)
             | Token::Octal(_)
             | Token::Hex(_)
-            | Token::LegacyOctal(_) => todo!(),
+            | Token::LegacyOctal(_) => self.parse_number_literal(),
             _ => self.parse_identifier_expression(),
         }
     }
@@ -791,18 +795,14 @@ mod tests {
                 d: null,
                 e: undefined,
                 f: item,
+                "test": true && 4,
+                4: false || "fallback",
+                0x3: hex,
+                0b10101: "binary",
+                0o5_67: octal,
             };
         "#;
         // var obj = {
-        //                 a: true,
-        //                 b: "hello",
-        //                 c: 4 ** 7,
-        //                 d: null,
-        //                 e: undefined,
-        //                 f: item,
-        //                 "test": true && 4,
-        //                 4: false || "fallback",
-        //                 0x3: hi,
         //                 [computed]: true,
         //                 ["computed2"]: 4 + 4 * 7,
         //                 [3]: "something"
@@ -1962,7 +1962,55 @@ mod tests {
                                     method: false,
                                     shorthand: false,
                                     computed: false,
-                                }
+                                },
+                                Property {
+                                    key: literal_expr!("test"),
+                                    value: logical_expr!(
+                                        literal_expr!(true),
+                                        literal_expr!(4),
+                                        And
+                                    ),
+                                    kind: PropertyKind::Init,
+                                    method: false,
+                                    shorthand: false,
+                                    computed: false,
+                                },
+                                Property {
+                                    key: literal_expr!(4),
+                                    value: logical_expr!(
+                                        literal_expr!(false),
+                                        literal_expr!("fallback"),
+                                        Or
+                                    ),
+                                    kind: PropertyKind::Init,
+                                    method: false,
+                                    shorthand: false,
+                                    computed: false,
+                                },
+                                Property {
+                                    key: literal_expr!(3),
+                                    value: ident_expr!("hex"),
+                                    kind: PropertyKind::Init,
+                                    method: false,
+                                    shorthand: false,
+                                    computed: false,
+                                },
+                                Property {
+                                    key: literal_expr!(21),
+                                    value: literal_expr!("binary"),
+                                    kind: PropertyKind::Init,
+                                    method: false,
+                                    shorthand: false,
+                                    computed: false,
+                                },
+                                Property {
+                                    key: literal_expr!(375),
+                                    value: ident_expr!("octal"),
+                                    kind: PropertyKind::Init,
+                                    method: false,
+                                    shorthand: false,
+                                    computed: false,
+                                },
                             ]
                         })))
                     }]

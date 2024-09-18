@@ -2,7 +2,9 @@ use js_parser::{lexer::Lexer, parser::Parser};
 
 fn main() {
     let input = r#"
-            var arr = [1, 2];
+            var obj = {
+                0x3: hi,
+            };
         "#;
 
     let lexer = Lexer::new(input);
