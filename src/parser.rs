@@ -3,10 +3,10 @@ use crate::{
         ArrayElement, ArrayExpression, AssignmentExpression, AssignmentOperator, BinaryExpression,
         BinaryOperator, BlockStatement, BooleanLiteral, BreakStatement, ContinueStatement,
         Declaration, Expression, Identifier, LabeledStatement, Literal, LogicalExpression,
-        LogicalOperator, NumberLiteral, ObjectExpression, Operator, Pattern, Program, Property,
-        PropertyKind, RegExp, RegExpLiteral, SpreadElement, Statement, StringLiteral,
-        ThisExpression, UnaryExpression, UnaryOperator, UpdateExpression, UpdateOperator,
-        VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
+        LogicalOperator, NumberLiteral, ObjectExpression, ObjectProperty, Operator, Pattern,
+        Program, Property, PropertyKind, RegExp, RegExpLiteral, SpreadElement, Statement,
+        StringLiteral, ThisExpression, UnaryExpression, UnaryOperator, UpdateExpression,
+        UpdateOperator, VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
     },
     lexer::{token::Token, Lexer},
     precedence::Precedence,
@@ -354,17 +354,24 @@ impl<'src> Parser<'src> {
                 break;
             }
 
-            let (key, computed) = self.parse_object_property_name()?;
-            self.expect_current(Token::Colon)?;
-            let value = self.parse_assignment_expression()?;
+            let property = if matches!(self.current_token, Token::DotDotDot) {
+                self.expect_current(Token::DotDotDot)?;
+                ObjectProperty::SpreadElement(SpreadElement {
+                    argument: self.parse_assignment_expression()?,
+                })
+            } else {
+                let (key, computed) = self.parse_object_property_name()?;
+                self.expect_current(Token::Colon)?;
+                let value = self.parse_assignment_expression()?;
 
-            let property = Property {
-                key,
-                value,
-                kind: PropertyKind::Init,
-                method: false,
-                shorthand: false,
-                computed,
+                ObjectProperty::Property(Property {
+                    key,
+                    value,
+                    kind: PropertyKind::Init,
+                    method: false,
+                    shorthand: false,
+                    computed,
+                })
             };
 
             properties.push(property);
@@ -580,10 +587,10 @@ mod tests {
             ArrayElement, ArrayExpression, AssignmentExpression, AssignmentOperator,
             BinaryExpression, BinaryOperator, BlockStatement, BooleanLiteral, BreakStatement,
             ContinueStatement, Declaration, Expression, Identifier, LabeledStatement, Literal,
-            LogicalExpression, LogicalOperator, NumberLiteral, ObjectExpression, Pattern, Property,
-            PropertyKind, SpreadElement, Statement, StringLiteral, ThisExpression, UnaryExpression,
-            UnaryOperator, UpdateExpression, UpdateOperator, VariableDeclaration,
-            VariableDeclarationKind, VariableDeclarator,
+            LogicalExpression, LogicalOperator, NumberLiteral, ObjectExpression, ObjectProperty,
+            Pattern, Property, PropertyKind, SpreadElement, Statement, StringLiteral,
+            ThisExpression, UnaryExpression, UnaryOperator, UpdateExpression, UpdateOperator,
+            VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
         },
         lexer::RegularExpressionFlags,
     };
@@ -796,6 +803,7 @@ mod tests {
                 ...[, ...spread2,,],
             ];
             var obj = {
+                ...spread1,
                 a: true,
                 b: "hello",
                 c: 4 ** 7,
@@ -804,6 +812,7 @@ mod tests {
                 f: item,
                 "test": true && 4,
                 4: false || "fallback",
+                ...spread2,
                 0x3: hex,
                 0b10101: "binary",
                 0o5_67: octal,
@@ -812,6 +821,7 @@ mod tests {
                 [3]: "something",
                 [4 + 4]: "something else",
                 ["computedString"]: 87 % 3,
+                ...{ ...spread3, test: true, ...spread4 },
             };
         "#;
 
@@ -1902,23 +1912,26 @@ mod tests {
                         }),
                         init: Some(Expression::ObjectExpression(Box::new(ObjectExpression {
                             properties: vec![
-                                Property {
+                                ObjectProperty::SpreadElement(SpreadElement {
+                                    argument: ident_expr!("spread1")
+                                }),
+                                ObjectProperty::Property(Property {
                                     key: ident_expr!("a"),
                                     value: literal_expr!(true),
                                     kind: PropertyKind::Init,
                                     method: false,
                                     shorthand: false,
                                     computed: false,
-                                },
-                                Property {
+                                }),
+                                ObjectProperty::Property(Property {
                                     key: ident_expr!("b"),
                                     value: literal_expr!("hello"),
                                     kind: PropertyKind::Init,
                                     method: false,
                                     shorthand: false,
                                     computed: false,
-                                },
-                                Property {
+                                }),
+                                ObjectProperty::Property(Property {
                                     key: ident_expr!("c"),
                                     value: binary_expr!(
                                         literal_expr!(4),
@@ -1929,32 +1942,32 @@ mod tests {
                                     method: false,
                                     shorthand: false,
                                     computed: false,
-                                },
-                                Property {
+                                }),
+                                ObjectProperty::Property(Property {
                                     key: ident_expr!("d"),
                                     value: literal_expr!(null),
                                     kind: PropertyKind::Init,
                                     method: false,
                                     shorthand: false,
                                     computed: false,
-                                },
-                                Property {
+                                }),
+                                ObjectProperty::Property(Property {
                                     key: ident_expr!("e"),
                                     value: ident_expr!("undefined"),
                                     kind: PropertyKind::Init,
                                     method: false,
                                     shorthand: false,
                                     computed: false,
-                                },
-                                Property {
+                                }),
+                                ObjectProperty::Property(Property {
                                     key: ident_expr!("f"),
                                     value: ident_expr!("item"),
                                     kind: PropertyKind::Init,
                                     method: false,
                                     shorthand: false,
                                     computed: false,
-                                },
-                                Property {
+                                }),
+                                ObjectProperty::Property(Property {
                                     key: literal_expr!("test"),
                                     value: logical_expr!(
                                         literal_expr!(true),
@@ -1965,8 +1978,8 @@ mod tests {
                                     method: false,
                                     shorthand: false,
                                     computed: false,
-                                },
-                                Property {
+                                }),
+                                ObjectProperty::Property(Property {
                                     key: literal_expr!(4),
                                     value: logical_expr!(
                                         literal_expr!(false),
@@ -1977,40 +1990,43 @@ mod tests {
                                     method: false,
                                     shorthand: false,
                                     computed: false,
-                                },
-                                Property {
+                                }),
+                                ObjectProperty::SpreadElement(SpreadElement {
+                                    argument: ident_expr!("spread2")
+                                }),
+                                ObjectProperty::Property(Property {
                                     key: literal_expr!(3),
                                     value: ident_expr!("hex"),
                                     kind: PropertyKind::Init,
                                     method: false,
                                     shorthand: false,
                                     computed: false,
-                                },
-                                Property {
+                                }),
+                                ObjectProperty::Property(Property {
                                     key: literal_expr!(21),
                                     value: literal_expr!("binary"),
                                     kind: PropertyKind::Init,
                                     method: false,
                                     shorthand: false,
                                     computed: false,
-                                },
-                                Property {
+                                }),
+                                ObjectProperty::Property(Property {
                                     key: literal_expr!(375),
                                     value: ident_expr!("octal"),
                                     kind: PropertyKind::Init,
                                     method: false,
                                     shorthand: false,
                                     computed: false,
-                                },
-                                Property {
+                                }),
+                                ObjectProperty::Property(Property {
                                     key: ident_expr!("computed"),
                                     value: literal_expr!(true),
                                     kind: PropertyKind::Init,
                                     method: false,
                                     shorthand: false,
                                     computed: true,
-                                },
-                                Property {
+                                }),
+                                ObjectProperty::Property(Property {
                                     key: ident_expr!("computed2"),
                                     value: binary_expr!(
                                         literal_expr!(4),
@@ -2021,24 +2037,24 @@ mod tests {
                                     method: false,
                                     shorthand: false,
                                     computed: true,
-                                },
-                                Property {
+                                }),
+                                ObjectProperty::Property(Property {
                                     key: literal_expr!(3),
                                     value: literal_expr!("something"),
                                     kind: PropertyKind::Init,
                                     method: false,
                                     shorthand: false,
                                     computed: true,
-                                },
-                                Property {
+                                }),
+                                ObjectProperty::Property(Property {
                                     key: binary_expr!(literal_expr!(4), literal_expr!(4), Plus),
                                     value: literal_expr!("something else"),
                                     kind: PropertyKind::Init,
                                     method: false,
                                     shorthand: false,
                                     computed: true,
-                                },
-                                Property {
+                                }),
+                                ObjectProperty::Property(Property {
                                     key: literal_expr!("computedString"),
                                     value: binary_expr!(
                                         literal_expr!(87),
@@ -2049,7 +2065,29 @@ mod tests {
                                     method: false,
                                     shorthand: false,
                                     computed: true,
-                                },
+                                }),
+                                ObjectProperty::SpreadElement(SpreadElement {
+                                    argument: Expression::ObjectExpression(Box::new(
+                                        ObjectExpression {
+                                            properties: vec![
+                                                ObjectProperty::SpreadElement(SpreadElement {
+                                                    argument: ident_expr!("spread3")
+                                                }),
+                                                ObjectProperty::Property(Property {
+                                                    key: ident_expr!("test"),
+                                                    value: literal_expr!(true),
+                                                    kind: PropertyKind::Init,
+                                                    method: false,
+                                                    shorthand: false,
+                                                    computed: false,
+                                                }),
+                                                ObjectProperty::SpreadElement(SpreadElement {
+                                                    argument: ident_expr!("spread4")
+                                                }),
+                                            ]
+                                        }
+                                    ))
+                                }),
                             ]
                         })))
                     }]

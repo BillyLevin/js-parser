@@ -444,7 +444,14 @@ pub struct SpreadElement {
 /// https://github.com/estree/estree/blob/master/es5.md#objectexpression
 #[derive(Debug, PartialEq)]
 pub struct ObjectExpression {
-    pub properties: Vec<Property>,
+    pub properties: Vec<ObjectProperty>,
+}
+
+/// https://github.com/estree/estree/blob/master/es2018.md#expressions
+#[derive(Debug, PartialEq)]
+pub enum ObjectProperty {
+    Property(Property),
+    SpreadElement(SpreadElement),
 }
 
 /// https://github.com/estree/estree/blob/master/es5.md#property
