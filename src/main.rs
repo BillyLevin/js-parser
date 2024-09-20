@@ -2,8 +2,9 @@ use js_parser::{lexer::Lexer, parser::Parser};
 
 fn main() {
     let input = r#"
-            var obj = {
-                [computed]: true
+            var func = function testFunction() {
+                var a = true;
+                var b = false, c = 4 ** 7 / 3;
             };
         "#;
 

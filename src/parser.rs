@@ -1,3 +1,5 @@
+mod function;
+
 use crate::{
     ast::{
         ArrayElement, ArrayExpression, AssignmentExpression, AssignmentOperator, BinaryExpression,
@@ -69,6 +71,7 @@ impl<'src> Parser<'src> {
             Token::Identifier(_) if self.peek_token == Token::Colon => {
                 self.parse_labeled_statement()
             }
+            Token::Function => self.parse_function_statement(),
             _ => Err(()),
         }
     }
@@ -246,6 +249,7 @@ impl<'src> Parser<'src> {
             Token::This => self.parse_this_expression(),
             Token::LeftBracket => self.parse_array_expression(),
             Token::LeftBrace => self.parse_object_expression(),
+            Token::Function => self.parse_function_expression(),
             _ => Err(()),
         }
     }
@@ -495,7 +499,7 @@ impl<'src> Parser<'src> {
 
     /// https://tc39.es/ecma262/#prod-BlockStatement
     fn parse_block_statement(&mut self) -> ParseResult<Statement> {
-        self.next_token();
+        self.expect_current(Token::LeftBrace)?;
 
         let mut statement_list = Vec::new();
 
@@ -586,11 +590,11 @@ mod tests {
         ast::{
             ArrayElement, ArrayExpression, AssignmentExpression, AssignmentOperator,
             BinaryExpression, BinaryOperator, BlockStatement, BooleanLiteral, BreakStatement,
-            ContinueStatement, Declaration, Expression, Identifier, LabeledStatement, Literal,
-            LogicalExpression, LogicalOperator, NumberLiteral, ObjectExpression, ObjectProperty,
-            Pattern, Property, PropertyKind, SpreadElement, Statement, StringLiteral,
-            ThisExpression, UnaryExpression, UnaryOperator, UpdateExpression, UpdateOperator,
-            VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
+            ContinueStatement, Declaration, Expression, Function, Identifier, LabeledStatement,
+            Literal, LogicalExpression, LogicalOperator, NumberLiteral, ObjectExpression,
+            ObjectProperty, Pattern, Property, PropertyKind, SpreadElement, Statement,
+            StringLiteral, ThisExpression, UnaryExpression, UnaryOperator, UpdateExpression,
+            UpdateOperator, VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
         },
         lexer::RegularExpressionFlags,
     };
@@ -822,6 +826,10 @@ mod tests {
                 [4 + 4]: "something else",
                 ["computedString"]: 87 % 3,
                 ...{ ...spread3, test: true, ...spread4 },
+            };
+            var func = function testFunction() {
+                var a = true;
+                var b = false, c = 4 ** 7 / 3;
             };
         "#;
 
@@ -2092,6 +2100,62 @@ mod tests {
                         })))
                     }]
                 })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::Identifier(Identifier {
+                            name: "func".to_string()
+                        }),
+                        init: Some(Expression::FunctionExpression(Box::new(Function {
+                            id: Some(Identifier {
+                                name: "testFunction".to_string()
+                            }),
+                            params: vec![],
+                            body: BlockStatement {
+                                body: vec![
+                                    Statement::Declaration(Declaration::VariableDeclaration(
+                                        VariableDeclaration {
+                                            kind: VariableDeclarationKind::Var,
+                                            declarations: vec![VariableDeclarator {
+                                                id: Pattern::Identifier(Identifier {
+                                                    name: "a".to_string()
+                                                }),
+                                                init: Some(literal_expr!(true))
+                                            },]
+                                        }
+                                    )),
+                                    Statement::Declaration(Declaration::VariableDeclaration(
+                                        VariableDeclaration {
+                                            kind: VariableDeclarationKind::Var,
+                                            declarations: vec![
+                                                VariableDeclarator {
+                                                    id: Pattern::Identifier(Identifier {
+                                                        name: "b".to_string()
+                                                    }),
+                                                    init: Some(literal_expr!(false))
+                                                },
+                                                VariableDeclarator {
+                                                    id: Pattern::Identifier(Identifier {
+                                                        name: "c".to_string()
+                                                    }),
+                                                    init: Some(binary_expr!(
+                                                        binary_expr!(
+                                                            literal_expr!(4),
+                                                            literal_expr!(7),
+                                                            Exponentiation
+                                                        ),
+                                                        literal_expr!(3),
+                                                        Divide
+                                                    ))
+                                                }
+                                            ]
+                                        }
+                                    ))
+                                ]
+                            }
+                        })))
+                    }]
+                }))
             ]
         );
     }

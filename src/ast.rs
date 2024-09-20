@@ -38,6 +38,7 @@ pub enum Statement {
 #[derive(Debug, PartialEq)]
 pub enum Declaration {
     VariableDeclaration(VariableDeclaration),
+    FunctionDeclaration(Function),
 }
 
 /// [ES5 `var`](https://github.com/estree/estree/blob/master/es5.md#variabledeclaration)
@@ -91,6 +92,7 @@ pub enum Expression {
     ThisExpression(ThisExpression),
     ArrayExpression(Box<ArrayExpression>),
     ObjectExpression(Box<ObjectExpression>),
+    FunctionExpression(Box<Function>),
 }
 
 /// https://github.com/estree/estree/blob/master/es5.md#literal
@@ -470,4 +472,12 @@ pub enum PropertyKind {
     Init,
     Get,
     Set,
+}
+
+/// https://github.com/estree/estree/blob/master/es5.md#functions
+#[derive(Debug, PartialEq)]
+pub struct Function {
+    pub id: Option<Identifier>,
+    pub params: Vec<Pattern>,
+    pub body: BlockStatement,
 }
