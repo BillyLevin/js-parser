@@ -1,5 +1,5 @@
 use crate::{
-    ast::{Declaration, Expression, Function, Identifier, Statement},
+    ast::{Declaration, Expression, Function, Identifier, Pattern, Statement},
     lexer::token::Token,
     parser::{ParseResult, Parser},
 };
@@ -44,20 +44,46 @@ impl<'src> Parser<'src> {
             Some(Identifier { name })
         };
 
-        self.expect_current(Token::LeftParen)?;
-        // TODO: parse function params
-        self.expect_current(Token::RightParen)?;
+        let params = self.parse_function_params()?;
 
         let body = self.parse_block_statement()?;
         let Statement::BlockStatement(body) = body else {
             return Err(());
         };
 
-        Ok(Function {
-            id,
-            params: Vec::new(),
-            body,
-        })
+        Ok(Function { id, params, body })
+    }
+
+    fn parse_function_params(&mut self) -> ParseResult<Vec<Pattern>> {
+        self.expect_current(Token::LeftParen)?;
+
+        let mut params = Vec::new();
+
+        loop {
+            if matches!(self.current_token, Token::RightParen) {
+                break;
+            }
+
+            let Token::Identifier(identifier) = &self.current_token else {
+                return Err(());
+            };
+
+            params.push(Pattern::Identifier(Identifier {
+                name: identifier.to_string(),
+            }));
+
+            self.next_token();
+
+            if matches!(self.current_token, Token::Comma) {
+                self.next_token();
+            } else {
+                break;
+            }
+        }
+
+        self.expect_current(Token::RightParen)?;
+
+        Ok(params)
     }
 }
 
@@ -66,11 +92,47 @@ mod tests {
     use super::*;
     use crate::{
         ast::{
-            BlockStatement, BooleanLiteral, Literal, Pattern, VariableDeclaration,
-            VariableDeclarationKind, VariableDeclarator,
+            BinaryExpression, BinaryOperator, BlockStatement, BooleanLiteral, Literal,
+            NumberLiteral, Pattern, StringLiteral, VariableDeclaration, VariableDeclarationKind,
+            VariableDeclarator,
         },
         lexer::Lexer,
     };
+
+    macro_rules! literal_expr {
+        (true) => {
+            Expression::Literal(Literal::BooleanLiteral(BooleanLiteral { value: true }))
+        };
+
+        (false) => {
+            Expression::Literal(Literal::BooleanLiteral(BooleanLiteral { value: false }))
+        };
+
+        (null) => {
+            Expression::Literal(Literal::NullLiteral)
+        };
+
+        ($lit:literal) => {
+            match $lit.to_string().parse::<f64>() {
+                Ok(num) => {
+                    Expression::Literal(Literal::NumberLiteral(NumberLiteral { value: num }))
+                }
+                _ => Expression::Literal(Literal::StringLiteral(StringLiteral {
+                    value: $lit.to_string(),
+                })),
+            }
+        };
+    }
+
+    macro_rules! binary_expr {
+        ($left:expr, $right:expr, $op:ident) => {
+            Expression::BinaryExpression(Box::new(BinaryExpression {
+                left: $left,
+                right: $right,
+                operator: BinaryOperator::$op,
+            }))
+        };
+    }
 
     #[test]
     fn parse_function() {
@@ -86,37 +148,16 @@ mod tests {
         var noParams3 = function() {
             var a = true;
         }
+
+        function basicParams(a, b, c) {
+            var d = 45 ** 7;
+        }
         "#;
 
         let lexer = Lexer::new(input);
         let mut parser = Parser::new(lexer);
 
         let program = parser.parse_program();
-
-        macro_rules! literal_expr {
-            (true) => {
-                Expression::Literal(Literal::BooleanLiteral(BooleanLiteral { value: true }))
-            };
-
-            (false) => {
-                Expression::Literal(Literal::BooleanLiteral(BooleanLiteral { value: false }))
-            };
-
-            (null) => {
-                Expression::Literal(Literal::NullLiteral)
-            };
-
-            ($lit:literal) => {
-                match $lit.to_string().parse::<f64>() {
-                    Ok(num) => {
-                        Expression::Literal(Literal::NumberLiteral(NumberLiteral { value: num }))
-                    }
-                    _ => Expression::Literal(Literal::StringLiteral(StringLiteral {
-                        value: $lit.to_string(),
-                    })),
-                }
-            };
-        }
 
         assert_eq!(
             program.body,
@@ -191,7 +232,40 @@ mod tests {
                             }
                         })))
                     }]
-                }))
+                })),
+                Statement::Declaration(Declaration::FunctionDeclaration(Function {
+                    id: Some(Identifier {
+                        name: "basicParams".to_string()
+                    }),
+                    params: vec![
+                        Pattern::Identifier(Identifier {
+                            name: "a".to_string()
+                        }),
+                        Pattern::Identifier(Identifier {
+                            name: "b".to_string()
+                        }),
+                        Pattern::Identifier(Identifier {
+                            name: "c".to_string()
+                        })
+                    ],
+                    body: BlockStatement {
+                        body: vec![Statement::Declaration(Declaration::VariableDeclaration(
+                            VariableDeclaration {
+                                kind: VariableDeclarationKind::Var,
+                                declarations: vec![VariableDeclarator {
+                                    id: Pattern::Identifier(Identifier {
+                                        name: "d".to_string()
+                                    }),
+                                    init: Some(binary_expr!(
+                                        literal_expr!(45),
+                                        literal_expr!(7),
+                                        Exponentiation
+                                    ))
+                                }]
+                            }
+                        ))]
+                    }
+                })),
             ]
         );
     }
