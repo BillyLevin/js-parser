@@ -1,4 +1,5 @@
 mod function;
+mod pattern;
 
 use crate::{
     ast::{
@@ -105,15 +106,7 @@ impl<'src> Parser<'src> {
     }
 
     fn parse_variable_declarator(&mut self) -> ParseResult<VariableDeclarator> {
-        let Token::Identifier(ref identifier) = self.current_token else {
-            self.errors
-                .push(format!("expected identifier, got {}", self.current_token));
-            return Err(());
-        };
-
-        let identifier = identifier.to_string();
-
-        self.next_token();
+        let id = self.parse_binding_pattern()?;
 
         let initializer = if self.current_token == Token::Equal {
             self.next_token();
@@ -123,7 +116,7 @@ impl<'src> Parser<'src> {
         };
 
         Ok(VariableDeclarator {
-            id: Pattern::Identifier(Identifier { name: identifier }),
+            id,
             init: initializer,
         })
     }

@@ -69,9 +69,14 @@ pub struct VariableDeclarator {
 pub enum Pattern {
     Identifier(Identifier),
     ObjectPattern,
-    ArrayPattern,
-    RestElement,
+    ArrayPattern(Box<ArrayPattern>),
     AssignmentPattern,
+}
+
+/// https://github.com/estree/estree/blob/master/es2015.md#arraypattern
+#[derive(Debug, PartialEq)]
+pub struct ArrayPattern {
+    pub elements: Vec<Option<Pattern>>,
 }
 
 #[derive(Debug, PartialEq)]
