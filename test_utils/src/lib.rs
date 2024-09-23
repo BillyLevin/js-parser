@@ -101,3 +101,19 @@ macro_rules! array_spread_element {
         }))
     };
 }
+
+#[macro_export]
+macro_rules! ident_pattern {
+    ($ident:expr) => {
+        Pattern::Identifier(Identifier {
+            name: $ident.to_string(),
+        })
+    };
+}
+
+#[macro_export]
+macro_rules! rest_pattern {
+    ($arg:expr) => {
+        Pattern::RestElement(Box::new(RestElement { argument: $arg }))
+    };
+}

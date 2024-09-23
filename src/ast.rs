@@ -71,12 +71,19 @@ pub enum Pattern {
     ObjectPattern,
     ArrayPattern(Box<ArrayPattern>),
     AssignmentPattern,
+    RestElement(Box<RestElement>),
 }
 
 /// https://github.com/estree/estree/blob/master/es2015.md#arraypattern
 #[derive(Debug, PartialEq)]
 pub struct ArrayPattern {
     pub elements: Vec<Option<Pattern>>,
+}
+
+/// https://github.com/estree/estree/blob/master/es2015.md#restelement
+#[derive(Debug, PartialEq)]
+pub struct RestElement {
+    pub argument: Pattern,
 }
 
 #[derive(Debug, PartialEq)]
