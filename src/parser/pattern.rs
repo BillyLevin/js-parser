@@ -29,6 +29,12 @@ impl<'src> Parser<'src> {
                 break;
             }
 
+            if matches!(self.current_token, Token::Comma) {
+                elements.push(None);
+                self.next_token();
+                continue;
+            }
+
             let mut is_rest = false;
 
             if matches!(self.current_token, Token::DotDotDot) {
@@ -75,6 +81,7 @@ mod tests {
             var [a, b, c, ...d] = [1, 2, 3, [4, 5]];
             var [a, b, c, [d, e]] = [1, 2, 3, [4, 5]];
             var [a, b, c, [d, e], ...f] = [1, 2, 3, [4, 5], []];
+            var [a,,,b] = [1, 2, 3, 4];
         "#;
 
         let lexer = Lexer::new(input);
@@ -195,7 +202,28 @@ mod tests {
                             ]
                         })))
                     }]
-                }))
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::ArrayPattern(Box::new(ArrayPattern {
+                            elements: vec![
+                                Some(ident_pattern!("a")),
+                                None,
+                                None,
+                                Some(ident_pattern!("b")),
+                            ]
+                        })),
+                        init: Some(Expression::ArrayExpression(Box::new(ArrayExpression {
+                            elements: vec![
+                                array_expr_element!(literal_expr!(1)),
+                                array_expr_element!(literal_expr!(2)),
+                                array_expr_element!(literal_expr!(3)),
+                                array_expr_element!(literal_expr!(4)),
+                            ]
+                        })))
+                    }]
+                })),
             ]
         );
     }
