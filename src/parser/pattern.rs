@@ -63,10 +63,7 @@ impl<'src> Parser<'src> {
 
 #[cfg(test)]
 mod tests {
-    use test_utils::{
-        array_expr_element, array_spread_element, ident_expr, ident_pattern, literal_expr,
-        rest_pattern,
-    };
+    use test_utils::{array_expr_element, ident_expr, ident_pattern, literal_expr, rest_pattern};
 
     use super::*;
     use crate::{ast::*, lexer::Lexer};
@@ -76,6 +73,8 @@ mod tests {
         let input = r#"
             var [a, b, c] = thing;
             var [a, b, c, ...d] = [1, 2, 3, [4, 5]];
+            var [a, b, c, [d, e]] = [1, 2, 3, [4, 5]];
+            var [a, b, c, [d, e], ...f] = [1, 2, 3, [4, 5], []];
         "#;
 
         let lexer = Lexer::new(input);
@@ -122,6 +121,76 @@ mod tests {
                                             array_expr_element!(literal_expr!(5)),
                                         ]
                                     }
+                                ))),
+                            ]
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::ArrayPattern(Box::new(ArrayPattern {
+                            elements: vec![
+                                Some(ident_pattern!("a")),
+                                Some(ident_pattern!("b")),
+                                Some(ident_pattern!("c")),
+                                Some(Pattern::ArrayPattern(Box::new(ArrayPattern {
+                                    elements: vec![
+                                        Some(ident_pattern!("d")),
+                                        Some(ident_pattern!("e"))
+                                    ]
+                                }))),
+                            ]
+                        })),
+                        init: Some(Expression::ArrayExpression(Box::new(ArrayExpression {
+                            elements: vec![
+                                array_expr_element!(literal_expr!(1)),
+                                array_expr_element!(literal_expr!(2)),
+                                array_expr_element!(literal_expr!(3)),
+                                array_expr_element!(Expression::ArrayExpression(Box::new(
+                                    ArrayExpression {
+                                        elements: vec![
+                                            array_expr_element!(literal_expr!(4)),
+                                            array_expr_element!(literal_expr!(5)),
+                                        ]
+                                    }
+                                ))),
+                            ]
+                        })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::ArrayPattern(Box::new(ArrayPattern {
+                            elements: vec![
+                                Some(ident_pattern!("a")),
+                                Some(ident_pattern!("b")),
+                                Some(ident_pattern!("c")),
+                                Some(Pattern::ArrayPattern(Box::new(ArrayPattern {
+                                    elements: vec![
+                                        Some(ident_pattern!("d")),
+                                        Some(ident_pattern!("e"))
+                                    ]
+                                }))),
+                                Some(rest_pattern!(ident_pattern!("f")))
+                            ]
+                        })),
+                        init: Some(Expression::ArrayExpression(Box::new(ArrayExpression {
+                            elements: vec![
+                                array_expr_element!(literal_expr!(1)),
+                                array_expr_element!(literal_expr!(2)),
+                                array_expr_element!(literal_expr!(3)),
+                                array_expr_element!(Expression::ArrayExpression(Box::new(
+                                    ArrayExpression {
+                                        elements: vec![
+                                            array_expr_element!(literal_expr!(4)),
+                                            array_expr_element!(literal_expr!(5)),
+                                        ]
+                                    }
+                                ))),
+                                array_expr_element!(Expression::ArrayExpression(Box::new(
+                                    ArrayExpression { elements: vec![] }
                                 ))),
                             ]
                         })))
