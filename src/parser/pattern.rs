@@ -54,7 +54,7 @@ impl<'src> Parser<'src> {
                     argument: binding_pattern,
                 }))
             } else {
-                binding_pattern
+                self.parse_pattern_initializer(binding_pattern)?
             };
 
             elements.push(Some(element));
@@ -180,6 +180,7 @@ mod tests {
             var [a, b, c, [d, e]] = [1, 2, 3, [4, 5]];
             var [a, b, c, [d, e], ...f] = [1, 2, 3, [4, 5], []];
             var [a,,,b] = [1, 2, 3, 4];
+            var [a = 34 ** 3, b, [c = true, d]] = thing;
         "#;
 
         let lexer = Lexer::new(input);
@@ -320,6 +321,34 @@ mod tests {
                                 array_expr_element!(literal_expr!(4)),
                             ]
                         })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::ArrayPattern(Box::new(ArrayPattern {
+                            elements: vec![
+                                Some(assign_pattern!(
+                                    ident_pattern!("a"),
+                                    binary_expr!(
+                                        literal_expr!(34),
+                                        literal_expr!(3),
+                                        Exponentiation
+                                    )
+                                )),
+                                Some(ident_pattern!("b")),
+                                Some(Pattern::ArrayPattern(Box::new(ArrayPattern {
+                                    elements: vec![
+                                        Some(assign_pattern!(
+                                            ident_pattern!("c"),
+                                            literal_expr!(true)
+                                        )),
+                                        Some(ident_pattern!("d"))
+                                    ]
+                                }))),
+                            ]
+                        })),
+                        init: Some(ident_expr!("thing"))
                     }]
                 })),
             ]
