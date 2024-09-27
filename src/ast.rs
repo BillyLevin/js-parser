@@ -70,7 +70,7 @@ pub enum Pattern {
     Identifier(Identifier),
     ObjectPattern(Box<ObjectPattern>),
     ArrayPattern(Box<ArrayPattern>),
-    AssignmentPattern,
+    AssignmentPattern(Box<AssignmentPattern>),
     RestElement(Box<RestElement>),
 }
 
@@ -98,6 +98,13 @@ pub struct AssignmentProperty {
     pub value: Pattern,
     pub shorthand: bool,
     pub computed: bool,
+}
+
+/// https://github.com/estree/estree/blob/master/es2015.md#assignmentpattern
+#[derive(Debug, PartialEq)]
+pub struct AssignmentPattern {
+    pub left: Pattern,
+    pub right: Expression,
 }
 
 /// https://github.com/estree/estree/blob/master/es2015.md#restelement

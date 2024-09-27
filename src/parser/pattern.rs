@@ -1,6 +1,6 @@
 use crate::{
     ast::{
-        ArrayPattern, AssignmentProperty, Expression, Identifier, ObjectPattern,
+        ArrayPattern, AssignmentPattern, AssignmentProperty, Expression, Identifier, ObjectPattern,
         ObjectPatternProperty, Pattern, RestElement,
     },
     lexer::token::Token,
@@ -99,6 +99,8 @@ impl<'src> Parser<'src> {
                         name: name.to_string(),
                     });
 
+                    let value = self.parse_pattern_initializer(value)?;
+
                     ObjectPatternProperty::Property(AssignmentProperty {
                         key,
                         value,
@@ -108,6 +110,7 @@ impl<'src> Parser<'src> {
                 } else {
                     self.expect_current(Token::Colon)?;
                     let value = self.parse_binding_pattern()?;
+                    let value = self.parse_pattern_initializer(value)?;
                     ObjectPatternProperty::Property(AssignmentProperty {
                         key,
                         value,
@@ -133,6 +136,19 @@ impl<'src> Parser<'src> {
         })))
     }
 
+    fn parse_pattern_initializer(&mut self, left: Pattern) -> ParseResult<Pattern> {
+        if matches!(self.current_token, Token::Equal) {
+            self.next_token();
+            let right = self.parse_assignment_expression()?;
+            Ok(Pattern::AssignmentPattern(Box::new(AssignmentPattern {
+                left,
+                right,
+            })))
+        } else {
+            Ok(left)
+        }
+    }
+
     fn parse_rest_element(&mut self) -> ParseResult<ObjectPatternProperty> {
         self.expect_current(Token::DotDotDot)?;
 
@@ -148,7 +164,10 @@ impl<'src> Parser<'src> {
 
 #[cfg(test)]
 mod tests {
-    use test_utils::{array_expr_element, ident_expr, ident_pattern, literal_expr, rest_pattern};
+    use test_utils::{
+        array_expr_element, assign_pattern, binary_expr, ident_expr, ident_pattern, literal_expr,
+        rest_pattern,
+    };
 
     use super::*;
     use crate::{ast::*, lexer::Lexer};
@@ -319,6 +338,8 @@ mod tests {
               ...gAndH
             } = { a: 1, b: 2, c: 3, d: { e: 4, f: 5 }, g: 6, h: 7 };
             var { a, b: renamedB, ["computed-thing"]: computedThing, ...rest } = thing;
+            var { a = 34 ** 3} = thing;
+            var { a: b = true} = thing;
         "#;
 
         let lexer = Lexer::new(input);
@@ -508,6 +529,41 @@ mod tests {
                                     argument: ident_pattern!("rest")
                                 })
                             ]
+                        })),
+                        init: Some(ident_expr!("thing"))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::ObjectPattern(Box::new(ObjectPattern {
+                            properties: vec![ObjectPatternProperty::Property(AssignmentProperty {
+                                key: ident_expr!("a"),
+                                value: assign_pattern!(
+                                    ident_pattern!("a"),
+                                    binary_expr!(
+                                        literal_expr!(34),
+                                        literal_expr!(3),
+                                        Exponentiation
+                                    )
+                                ),
+                                shorthand: true,
+                                computed: false
+                            }),]
+                        })),
+                        init: Some(ident_expr!("thing"))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: Pattern::ObjectPattern(Box::new(ObjectPattern {
+                            properties: vec![ObjectPatternProperty::Property(AssignmentProperty {
+                                key: ident_expr!("a"),
+                                value: assign_pattern!(ident_pattern!("b"), literal_expr!(true)),
+                                shorthand: false,
+                                computed: false
+                            }),]
                         })),
                         init: Some(ident_expr!("thing"))
                     }]

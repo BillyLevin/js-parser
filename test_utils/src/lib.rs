@@ -117,3 +117,13 @@ macro_rules! rest_pattern {
         Pattern::RestElement(Box::new(RestElement { argument: $arg }))
     };
 }
+
+#[macro_export]
+macro_rules! assign_pattern {
+    ($left:expr, $right:expr) => {
+        Pattern::AssignmentPattern(Box::new(AssignmentPattern {
+            left: $left,
+            right: $right,
+        }))
+    };
+}
