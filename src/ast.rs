@@ -68,7 +68,7 @@ pub struct VariableDeclarator {
 #[derive(Debug, PartialEq)]
 pub enum Pattern {
     Identifier(Identifier),
-    ObjectPattern,
+    ObjectPattern(Box<ObjectPattern>),
     ArrayPattern(Box<ArrayPattern>),
     AssignmentPattern,
     RestElement(Box<RestElement>),
@@ -78,6 +78,26 @@ pub enum Pattern {
 #[derive(Debug, PartialEq)]
 pub struct ArrayPattern {
     pub elements: Vec<Option<Pattern>>,
+}
+
+/// https://github.com/estree/estree/blob/master/es2015.md#objectpattern
+#[derive(Debug, PartialEq)]
+pub struct ObjectPattern {
+    pub properties: Vec<ObjectPatternProperty>,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum ObjectPatternProperty {
+    Property(AssignmentProperty),
+    RestElement(RestElement),
+}
+
+#[derive(Debug, PartialEq)]
+pub struct AssignmentProperty {
+    pub key: Expression,
+    pub value: Pattern,
+    pub shorthand: bool,
+    pub computed: bool,
 }
 
 /// https://github.com/estree/estree/blob/master/es2015.md#restelement
