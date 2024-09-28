@@ -5,7 +5,7 @@ use crate::{
 };
 
 #[derive(Debug, PartialEq)]
-enum FunctionKind {
+pub(super) enum FunctionKind {
     Declaration,
     Expression,
 }
@@ -13,6 +13,7 @@ enum FunctionKind {
 impl<'src> Parser<'src> {
     /// https://tc39.es/ecma262/#prod-FunctionDeclaration
     pub(super) fn parse_function_statement(&mut self) -> ParseResult<Statement> {
+        self.expect_current(Token::Function)?;
         Ok(Statement::Declaration(Declaration::FunctionDeclaration(
             self.parse_function(FunctionKind::Declaration)?,
         )))
@@ -20,14 +21,13 @@ impl<'src> Parser<'src> {
 
     /// https://tc39.es/ecma262/#prod-FunctionExpression
     pub(super) fn parse_function_expression(&mut self) -> ParseResult<Expression> {
+        self.expect_current(Token::Function)?;
         Ok(Expression::FunctionExpression(Box::new(
             self.parse_function(FunctionKind::Expression)?,
         )))
     }
 
-    fn parse_function(&mut self, kind: FunctionKind) -> ParseResult<Function> {
-        self.expect_current(Token::Function)?;
-
+    pub(super) fn parse_function(&mut self, kind: FunctionKind) -> ParseResult<Function> {
         let id = if matches!(self.current_token, Token::LeftParen) {
             match kind {
                 FunctionKind::Declaration => return Err(()),

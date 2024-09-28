@@ -12,6 +12,7 @@ use crate::{
         VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
     },
     lexer::{token::Token, Lexer},
+    parser::function::FunctionKind,
     precedence::Precedence,
 };
 
@@ -358,17 +359,33 @@ impl<'src> Parser<'src> {
                 })
             } else {
                 let (key, computed) = self.parse_object_property_name()?;
-                self.expect_current(Token::Colon)?;
-                let value = self.parse_assignment_expression()?;
 
-                ObjectProperty::Property(Property {
-                    key,
-                    value,
-                    kind: PropertyKind::Init,
-                    method: false,
-                    shorthand: false,
-                    computed,
-                })
+                if matches!(self.current_token, Token::Colon) {
+                    self.expect_current(Token::Colon)?;
+                    let value = self.parse_assignment_expression()?;
+
+                    ObjectProperty::Property(Property {
+                        key,
+                        value,
+                        kind: PropertyKind::Init,
+                        method: false,
+                        shorthand: false,
+                        computed,
+                    })
+                } else if matches!(self.current_token, Token::LeftParen) {
+                    let function = self.parse_function(FunctionKind::Expression)?;
+
+                    ObjectProperty::Property(Property {
+                        key,
+                        value: Expression::FunctionExpression(Box::new(function)),
+                        kind: PropertyKind::Init,
+                        method: true,
+                        shorthand: false,
+                        computed: false,
+                    })
+                } else {
+                    return Err(());
+                }
             };
 
             properties.push(property);
@@ -581,7 +598,7 @@ impl<'src> Parser<'src> {
 mod tests {
     use test_utils::{
         array_expr_element, array_spread_element, assign_expr, binary_expr, ident_expr,
-        literal_expr, logical_expr, unary_expr, update_expr,
+        ident_pattern, literal_expr, logical_expr, unary_expr, update_expr,
     };
 
     use crate::{
@@ -727,6 +744,15 @@ mod tests {
                 [4 + 4]: "something else",
                 ["computedString"]: 87 % 3,
                 ...{ ...spread3, test: true, ...spread4 },
+                hello() {
+                    var a = true;
+                },
+                helloWithArgs(a, b) {
+                    var c = a + b;
+                },
+                ["hello" + "_" + "world"]() {
+                    var hello = "world";
+                },
             };
             var func = function testFunction() {
                 var a = true;
@@ -1997,6 +2023,96 @@ mod tests {
                                         }
                                     ))
                                 }),
+                                ObjectProperty::Property(Property {
+                                    key: ident_expr!("hello"),
+                                    value: Expression::FunctionExpression(Box::new(Function {
+                                        id: None,
+                                        params: vec![],
+                                        body: BlockStatement {
+                                            body: vec![Statement::Declaration(
+                                                Declaration::VariableDeclaration(
+                                                    VariableDeclaration {
+                                                        kind: VariableDeclarationKind::Var,
+                                                        declarations: vec![VariableDeclarator {
+                                                            id: Pattern::Identifier(Identifier {
+                                                                name: "a".to_string()
+                                                            }),
+                                                            init: Some(literal_expr!(true))
+                                                        },]
+                                                    }
+                                                )
+                                            ),]
+                                        }
+                                    })),
+                                    kind: PropertyKind::Init,
+                                    method: true,
+                                    shorthand: false,
+                                    computed: false,
+                                }),
+                                ObjectProperty::Property(Property {
+                                    key: ident_expr!("helloWithArgs"),
+                                    value: Expression::FunctionExpression(Box::new(Function {
+                                        id: None,
+                                        params: vec![ident_pattern!("a"), ident_pattern!("b")],
+                                        body: BlockStatement {
+                                            body: vec![Statement::Declaration(
+                                                Declaration::VariableDeclaration(
+                                                    VariableDeclaration {
+                                                        kind: VariableDeclarationKind::Var,
+                                                        declarations: vec![VariableDeclarator {
+                                                            id: Pattern::Identifier(Identifier {
+                                                                name: "c".to_string()
+                                                            }),
+                                                            init: Some(binary_expr!(
+                                                                ident_expr!("a"),
+                                                                ident_expr!("b"),
+                                                                Plus
+                                                            ))
+                                                        },]
+                                                    }
+                                                )
+                                            ),]
+                                        }
+                                    })),
+                                    kind: PropertyKind::Init,
+                                    method: true,
+                                    shorthand: false,
+                                    computed: false,
+                                }),
+                                ObjectProperty::Property(Property {
+                                    key: binary_expr!(
+                                        binary_expr!(
+                                            literal_expr!("hello"),
+                                            literal_expr!("_"),
+                                            Plus
+                                        ),
+                                        literal_expr!("world"),
+                                        Plus
+                                    ),
+                                    value: Expression::FunctionExpression(Box::new(Function {
+                                        id: None,
+                                        params: vec![],
+                                        body: BlockStatement {
+                                            body: vec![Statement::Declaration(
+                                                Declaration::VariableDeclaration(
+                                                    VariableDeclaration {
+                                                        kind: VariableDeclarationKind::Var,
+                                                        declarations: vec![VariableDeclarator {
+                                                            id: Pattern::Identifier(Identifier {
+                                                                name: "hello".to_string()
+                                                            }),
+                                                            init: Some(literal_expr!("world"))
+                                                        },]
+                                                    }
+                                                )
+                                            ),]
+                                        }
+                                    })),
+                                    kind: PropertyKind::Init,
+                                    method: true,
+                                    shorthand: false,
+                                    computed: false,
+                                })
                             ]
                         })))
                     }]
