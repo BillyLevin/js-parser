@@ -831,54 +831,42 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "x".to_string()
-                        }),
+                        id: ident_pattern!("x"),
                         init: Some(literal_expr!(5))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "y".to_string()
-                        }),
+                        id: ident_pattern!("y"),
                         init: Some(literal_expr!("hello"))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "z".to_string()
-                        }),
+                        id: ident_pattern!("z"),
                         init: Some(literal_expr!(false))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "a".to_string()
-                        }),
+                        id: ident_pattern!("a"),
                         init: None
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "d".to_string()
-                        }),
+                        id: ident_pattern!("d"),
                         init: Some(literal_expr!(null))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "myRegex".to_string()
-                        }),
+                        id: ident_pattern!("myRegex"),
                         init: Some(Expression::Literal(Literal::RegExpLiteral(RegExpLiteral {
                             regex: RegExp {
                                 pattern: "[hello](.*)world[0-9]$".to_string(),
@@ -890,9 +878,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "myRegex2".to_string()
-                        }),
+                        id: ident_pattern!("myRegex2"),
                         init: Some(Expression::Literal(Literal::RegExpLiteral(RegExpLiteral {
                             regex: RegExp {
                                 pattern: "=start[a-z]\\/with(.*)equals".to_string(),
@@ -905,15 +891,11 @@ mod tests {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![
                         VariableDeclarator {
-                            id: Pattern::Identifier(Identifier {
-                                name: "b".to_string()
-                            }),
+                            id: ident_pattern!("b"),
                             init: None
                         },
                         VariableDeclarator {
-                            id: Pattern::Identifier(Identifier {
-                                name: "c".to_string()
-                            }),
+                            id: ident_pattern!("c"),
                             init: Some(literal_expr!(4))
                         }
                     ]
@@ -922,15 +904,11 @@ mod tests {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![
                         VariableDeclarator {
-                            id: Pattern::Identifier(Identifier {
-                                name: "hello".to_string()
-                            }),
+                            id: ident_pattern!("hello"),
                             init: Some(literal_expr!("world"))
                         },
                         VariableDeclarator {
-                            id: Pattern::Identifier(Identifier {
-                                name: "bool".to_string()
-                            }),
+                            id: ident_pattern!("bool"),
                             init: Some(literal_expr!(false))
                         }
                     ]
@@ -938,27 +916,21 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "sum".to_string()
-                        }),
+                        id: ident_pattern!("sum"),
                         init: Some(binary_expr!(literal_expr!(4), literal_expr!(5), Plus))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "product".to_string()
-                        }),
+                        id: ident_pattern!("product"),
                         init: Some(binary_expr!(literal_expr!(27), literal_expr!(8), Multiply))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "precedence".to_string()
-                        }),
+                        id: ident_pattern!("precedence"),
                         init: Some(binary_expr!(
                             literal_expr!(4),
                             binary_expr!(literal_expr!(27), literal_expr!(8), Multiply),
@@ -969,9 +941,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "precedence2".to_string()
-                        }),
+                        id: ident_pattern!("precedence2"),
                         init: Some(binary_expr!(
                             binary_expr!(literal_expr!(4), literal_expr!(27), Multiply),
                             literal_expr!(8),
@@ -982,9 +952,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "lotsOfOperations".to_string(),
-                        }),
+                        id: ident_pattern!("lotsOfOperations"),
                         init: Some(binary_expr!(
                             binary_expr!(
                                 binary_expr!(
@@ -1007,9 +975,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "exp".to_string(),
-                        }),
+                        id: ident_pattern!("exp"),
                         init: Some(binary_expr!(
                             binary_expr!(
                                 literal_expr!(4),
@@ -1024,9 +990,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "exp2".to_string(),
-                        }),
+                        id: ident_pattern!("exp2"),
                         init: Some(binary_expr!(
                             literal_expr!(45),
                             binary_expr!(literal_expr!(7), literal_expr!(3), Exponentiation),
@@ -1037,9 +1001,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "remainder".to_string(),
-                        }),
+                        id: ident_pattern!("remainder"),
                         init: Some(binary_expr!(
                             binary_expr!(literal_expr!(45), literal_expr!(5), Remainder),
                             literal_expr!(3),
@@ -1050,9 +1012,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "remainder2".to_string(),
-                        }),
+                        id: ident_pattern!("remainder2"),
                         init: Some(binary_expr!(
                             literal_expr!(45),
                             binary_expr!(literal_expr!(5), literal_expr!(3), Remainder),
@@ -1063,9 +1023,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "leftShift".to_string(),
-                        }),
+                        id: ident_pattern!("leftShift"),
                         init: Some(binary_expr!(
                             literal_expr!(45),
                             binary_expr!(literal_expr!(5), literal_expr!(3), Multiply),
@@ -1076,9 +1034,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "leftShift2".to_string(),
-                        }),
+                        id: ident_pattern!("leftShift2"),
                         init: Some(binary_expr!(
                             binary_expr!(literal_expr!(45), literal_expr!(5), Multiply),
                             literal_expr!(3),
@@ -1089,9 +1045,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "rightShift".to_string(),
-                        }),
+                        id: ident_pattern!("rightShift"),
                         init: Some(binary_expr!(
                             literal_expr!(45),
                             binary_expr!(literal_expr!(5), literal_expr!(3), Multiply),
@@ -1102,9 +1056,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "rightShift2".to_string(),
-                        }),
+                        id: ident_pattern!("rightShift2"),
                         init: Some(binary_expr!(
                             binary_expr!(literal_expr!(45), literal_expr!(5), Multiply),
                             literal_expr!(3),
@@ -1115,9 +1067,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "unsignedRightShift".to_string(),
-                        }),
+                        id: ident_pattern!("unsignedRightShift"),
                         init: Some(binary_expr!(
                             literal_expr!(45),
                             binary_expr!(literal_expr!(5), literal_expr!(3), Multiply),
@@ -1128,9 +1078,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "unsignedRightShift2".to_string(),
-                        }),
+                        id: ident_pattern!("unsignedRightShift2"),
                         init: Some(binary_expr!(
                             binary_expr!(literal_expr!(45), literal_expr!(5), Multiply),
                             literal_expr!(3),
@@ -1141,9 +1089,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "lessThan".to_string(),
-                        }),
+                        id: ident_pattern!("lessThan"),
                         init: Some(binary_expr!(
                             literal_expr!(34),
                             binary_expr!(literal_expr!(7), literal_expr!(2), Plus),
@@ -1154,9 +1100,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "lessThan2".to_string(),
-                        }),
+                        id: ident_pattern!("lessThan2"),
                         init: Some(binary_expr!(
                             binary_expr!(literal_expr!(34), literal_expr!(7), Plus),
                             literal_expr!(2),
@@ -1167,9 +1111,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "lessThanEqual".to_string(),
-                        }),
+                        id: ident_pattern!("lessThanEqual"),
                         init: Some(binary_expr!(
                             literal_expr!(34),
                             binary_expr!(literal_expr!(7), literal_expr!(2), Plus),
@@ -1180,9 +1122,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "lessThanEqual2".to_string(),
-                        }),
+                        id: ident_pattern!("lessThanEqual2"),
                         init: Some(binary_expr!(
                             binary_expr!(literal_expr!(34), literal_expr!(7), Plus),
                             literal_expr!(2),
@@ -1193,9 +1133,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "greaterThan".to_string(),
-                        }),
+                        id: ident_pattern!("greaterThan"),
                         init: Some(binary_expr!(
                             literal_expr!(34),
                             binary_expr!(literal_expr!(7), literal_expr!(2), Plus),
@@ -1206,9 +1144,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "greaterThan2".to_string(),
-                        }),
+                        id: ident_pattern!("greaterThan2"),
                         init: Some(binary_expr!(
                             binary_expr!(literal_expr!(34), literal_expr!(7), Plus),
                             literal_expr!(2),
@@ -1219,9 +1155,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "greaterThanEqual".to_string(),
-                        }),
+                        id: ident_pattern!("greaterThanEqual"),
                         init: Some(binary_expr!(
                             literal_expr!(34),
                             binary_expr!(literal_expr!(7), literal_expr!(2), Plus),
@@ -1232,9 +1166,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "greaterThanEqual2".to_string(),
-                        }),
+                        id: ident_pattern!("greaterThanEqual2"),
                         init: Some(binary_expr!(
                             binary_expr!(literal_expr!(34), literal_expr!(7), Plus),
                             literal_expr!(2),
@@ -1245,9 +1177,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "inOperator".to_string(),
-                        }),
+                        id: ident_pattern!("inOperator"),
                         init: Some(binary_expr!(
                             literal_expr!("property"),
                             ident_expr!("y"),
@@ -1258,18 +1188,14 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "instanceofOperator".to_string(),
-                        }),
+                        id: ident_pattern!("instanceofOperator"),
                         init: Some(binary_expr!(ident_expr!("x"), ident_expr!("y"), Instanceof))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "doubleEquals".to_string(),
-                        }),
+                        id: ident_pattern!("doubleEquals"),
                         init: Some(binary_expr!(
                             ident_expr!("x"),
                             literal_expr!(4),
@@ -1280,9 +1206,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "doubleEquals2".to_string(),
-                        }),
+                        id: ident_pattern!("doubleEquals2"),
                         init: Some(binary_expr!(
                             literal_expr!("hello"),
                             literal_expr!(false),
@@ -1293,9 +1217,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "notDoubleEquals".to_string(),
-                        }),
+                        id: ident_pattern!("notDoubleEquals"),
                         init: Some(binary_expr!(
                             literal_expr!(4),
                             ident_expr!("x"),
@@ -1306,9 +1228,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "notDoubleEquals2".to_string(),
-                        }),
+                        id: ident_pattern!("notDoubleEquals2"),
                         init: Some(binary_expr!(
                             literal_expr!(false),
                             literal_expr!("hello"),
@@ -1319,9 +1239,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "tripleEquals".to_string(),
-                        }),
+                        id: ident_pattern!("tripleEquals"),
                         init: Some(binary_expr!(
                             ident_expr!("x"),
                             literal_expr!(4),
@@ -1332,9 +1250,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "tripleEquals2".to_string(),
-                        }),
+                        id: ident_pattern!("tripleEquals2"),
                         init: Some(binary_expr!(
                             literal_expr!("hello"),
                             literal_expr!(false),
@@ -1345,9 +1261,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "notTripleEquals".to_string(),
-                        }),
+                        id: ident_pattern!("notTripleEquals"),
                         init: Some(binary_expr!(
                             literal_expr!(4),
                             ident_expr!("x"),
@@ -1358,9 +1272,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "notTripleEquals2".to_string(),
-                        }),
+                        id: ident_pattern!("notTripleEquals2"),
                         init: Some(binary_expr!(
                             literal_expr!(false),
                             literal_expr!("hello"),
@@ -1371,9 +1283,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "bitwise".to_string(),
-                        }),
+                        id: ident_pattern!("bitwise"),
                         init: Some(binary_expr!(
                             binary_expr!(
                                 literal_expr!(45),
@@ -1388,9 +1298,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "logical".to_string()
-                        }),
+                        id: ident_pattern!("logical"),
                         init: Some(logical_expr!(
                             logical_expr!(
                                 binary_expr!(
@@ -1409,9 +1317,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "logical2".to_string()
-                        }),
+                        id: ident_pattern!("logical2"),
                         init: Some(logical_expr!(
                             literal_expr!(true),
                             logical_expr!(
@@ -1426,9 +1332,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "logical3".to_string()
-                        }),
+                        id: ident_pattern!("logical3"),
                         init: Some(logical_expr!(
                             ident_expr!("thing"),
                             literal_expr!("fallback"),
@@ -1439,9 +1343,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "a".to_string()
-                        }),
+                        id: ident_pattern!("a"),
                         init: Some(assign_expr!(
                             ident_expr!("b"),
                             binary_expr!(literal_expr!(4), literal_expr!(5), GreaterThan),
@@ -1452,9 +1354,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "a".to_string()
-                        }),
+                        id: ident_pattern!("a"),
                         init: Some(assign_expr!(
                             ident_expr!("b"),
                             assign_expr!(ident_expr!("c"), literal_expr!(3), Divide),
@@ -1465,9 +1365,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "a".to_string()
-                        }),
+                        id: ident_pattern!("a"),
                         init: Some(assign_expr!(
                             ident_expr!("b"),
                             assign_expr!(
@@ -1482,9 +1380,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "a".to_string()
-                        }),
+                        id: ident_pattern!("a"),
                         init: Some(assign_expr!(
                             ident_expr!("b"),
                             assign_expr!(ident_expr!("c"), ident_expr!("d"), Remainder),
@@ -1495,9 +1391,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "a".to_string()
-                        }),
+                        id: ident_pattern!("a"),
                         init: Some(assign_expr!(
                             ident_expr!("b"),
                             assign_expr!(
@@ -1516,9 +1410,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "a".to_string()
-                        }),
+                        id: ident_pattern!("a"),
                         init: Some(assign_expr!(
                             ident_expr!("b"),
                             assign_expr!(
@@ -1533,9 +1425,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "a".to_string()
-                        }),
+                        id: ident_pattern!("a"),
                         init: Some(assign_expr!(
                             ident_expr!("b"),
                             assign_expr!(
@@ -1558,72 +1448,56 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "a".to_string()
-                        }),
+                        id: ident_pattern!("a"),
                         init: Some(unary_expr!(ident_expr!("b"), Minus))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "a".to_string()
-                        }),
+                        id: ident_pattern!("a"),
                         init: Some(unary_expr!(ident_expr!("b"), Plus))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "a".to_string()
-                        }),
+                        id: ident_pattern!("a"),
                         init: Some(unary_expr!(ident_expr!("b"), LogicalNot))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "a".to_string()
-                        }),
+                        id: ident_pattern!("a"),
                         init: Some(unary_expr!(ident_expr!("b"), BitwiseNot))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "a".to_string()
-                        }),
+                        id: ident_pattern!("a"),
                         init: Some(unary_expr!(ident_expr!("b"), Typeof))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "a".to_string()
-                        }),
+                        id: ident_pattern!("a"),
                         init: Some(unary_expr!(ident_expr!("b"), Void))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "a".to_string()
-                        }),
+                        id: ident_pattern!("a"),
                         init: Some(unary_expr!(ident_expr!("b"), Delete))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "a".to_string()
-                        }),
+                        id: ident_pattern!("a"),
                         init: Some(binary_expr!(
                             binary_expr!(
                                 ident_expr!("b"),
@@ -1642,9 +1516,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "a".to_string()
-                        }),
+                        id: ident_pattern!("a"),
                         init: Some(binary_expr!(
                             binary_expr!(
                                 binary_expr!(
@@ -1663,9 +1535,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "a".to_string()
-                        }),
+                        id: ident_pattern!("a"),
                         init: Some(logical_expr!(
                             binary_expr!(
                                 unary_expr!(ident_expr!("b"), Plus),
@@ -1684,9 +1554,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "a".to_string()
-                        }),
+                        id: ident_pattern!("a"),
                         init: Some(binary_expr!(
                             update_expr!(ident_expr!("b"), Increment, true),
                             binary_expr!(
@@ -1701,9 +1569,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "a".to_string()
-                        }),
+                        id: ident_pattern!("a"),
                         init: Some(binary_expr!(
                             binary_expr!(
                                 update_expr!(ident_expr!("b"), Decrement, false),
@@ -1715,13 +1581,10 @@ mod tests {
                         ))
                     }]
                 })),
-                // var a = typeof b++ >= ~--c % d--;
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "a".to_string()
-                        }),
+                        id: ident_pattern!("a"),
                         init: Some(binary_expr!(
                             unary_expr!(update_expr!(ident_expr!("b"), Increment, false), Typeof),
                             binary_expr!(
@@ -1739,18 +1602,14 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "a".to_string()
-                        }),
+                        id: ident_pattern!("a"),
                         init: Some(Expression::ThisExpression(ThisExpression))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "arr".to_string()
-                        }),
+                        id: ident_pattern!("arr"),
                         init: Some(Expression::ArrayExpression(Box::new(ArrayExpression {
                             elements: vec![]
                         })))
@@ -1759,9 +1618,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "arr".to_string()
-                        }),
+                        id: ident_pattern!("arr"),
                         init: Some(Expression::ArrayExpression(Box::new(ArrayExpression {
                             elements: vec![
                                 array_expr_element!(literal_expr!(1)),
@@ -1814,9 +1671,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "arr".to_string()
-                        }),
+                        id: ident_pattern!("arr"),
                         init: Some(Expression::ArrayExpression(Box::new(ArrayExpression {
                             elements: vec![
                                 array_spread_element!(ident_expr!("spread1")),
@@ -1861,9 +1716,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "arr".to_string()
-                        }),
+                        id: ident_pattern!("arr"),
                         init: Some(Expression::ArrayExpression(Box::new(ArrayExpression {
                             elements: vec![
                                 None,
@@ -1902,9 +1755,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "obj".to_string()
-                        }),
+                        id: ident_pattern!("obj"),
                         init: Some(Expression::ObjectExpression(Box::new(ObjectExpression {
                             properties: vec![
                                 ObjectProperty::SpreadElement(SpreadElement {
@@ -2144,9 +1995,7 @@ mod tests {
                                                     VariableDeclaration {
                                                         kind: VariableDeclarationKind::Var,
                                                         declarations: vec![VariableDeclarator {
-                                                            id: Pattern::Identifier(Identifier {
-                                                                name: "hello".to_string()
-                                                            }),
+                                                            id: ident_pattern!("hello"),
                                                             init: Some(literal_expr!("world"))
                                                         },]
                                                     }
@@ -2208,9 +2057,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "func".to_string()
-                        }),
+                        id: ident_pattern!("func"),
                         init: Some(Expression::FunctionExpression(Box::new(Function {
                             id: Some(Identifier {
                                 name: "testFunction".to_string()
@@ -2222,9 +2069,7 @@ mod tests {
                                         VariableDeclaration {
                                             kind: VariableDeclarationKind::Var,
                                             declarations: vec![VariableDeclarator {
-                                                id: Pattern::Identifier(Identifier {
-                                                    name: "a".to_string()
-                                                }),
+                                                id: ident_pattern!("a"),
                                                 init: Some(literal_expr!(true))
                                             },]
                                         }
@@ -2234,15 +2079,11 @@ mod tests {
                                             kind: VariableDeclarationKind::Var,
                                             declarations: vec![
                                                 VariableDeclarator {
-                                                    id: Pattern::Identifier(Identifier {
-                                                        name: "b".to_string()
-                                                    }),
+                                                    id: ident_pattern!("b"),
                                                     init: Some(literal_expr!(false))
                                                 },
                                                 VariableDeclarator {
-                                                    id: Pattern::Identifier(Identifier {
-                                                        name: "c".to_string()
-                                                    }),
+                                                    id: ident_pattern!("c"),
                                                     init: Some(binary_expr!(
                                                         binary_expr!(
                                                             literal_expr!(4),
@@ -2376,9 +2217,7 @@ mod tests {
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
-                        id: Pattern::Identifier(Identifier {
-                            name: "a".to_string()
-                        }),
+                        id: ident_pattern!("a"),
                         init: Some(literal_expr!("thing"))
                     }]
                 })),
@@ -2388,9 +2227,7 @@ mod tests {
                             VariableDeclaration {
                                 kind: VariableDeclarationKind::Var,
                                 declarations: vec![VariableDeclarator {
-                                    id: Pattern::Identifier(Identifier {
-                                        name: "a".to_string()
-                                    }),
+                                    id: ident_pattern!("a"),
                                     init: Some(literal_expr!("another thing"))
                                 }]
                             }
@@ -2399,9 +2236,7 @@ mod tests {
                             VariableDeclaration {
                                 kind: VariableDeclarationKind::Var,
                                 declarations: vec![VariableDeclarator {
-                                    id: Pattern::Identifier(Identifier {
-                                        name: "b".to_string()
-                                    }),
+                                    id: ident_pattern!("b"),
                                     init: Some(literal_expr!(54))
                                 }]
                             }
@@ -2438,9 +2273,7 @@ mod tests {
                         VariableDeclaration {
                             kind: VariableDeclarationKind::Var,
                             declarations: vec![VariableDeclarator {
-                                id: Pattern::Identifier(Identifier {
-                                    name: "a".to_string()
-                                }),
+                                id: ident_pattern!("a"),
                                 init: Some(literal_expr!(4))
                             }]
                         }
@@ -2454,9 +2287,7 @@ mod tests {
                         VariableDeclaration {
                             kind: VariableDeclarationKind::Var,
                             declarations: vec![VariableDeclarator {
-                                id: Pattern::Identifier(Identifier {
-                                    name: "b".to_string()
-                                }),
+                                id: ident_pattern!("b"),
                                 init: Some(literal_expr!("hello"))
                             }]
                         }
