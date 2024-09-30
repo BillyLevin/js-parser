@@ -7,9 +7,9 @@ use crate::{
         BinaryOperator, BlockStatement, BooleanLiteral, BreakStatement, ContinueStatement,
         Declaration, Expression, Identifier, LabeledStatement, Literal, LogicalExpression,
         LogicalOperator, NumberLiteral, ObjectExpression, ObjectProperty, Operator, Program,
-        Property, PropertyKind, RegExp, RegExpLiteral, SpreadElement, Statement, StringLiteral,
-        ThisExpression, UnaryExpression, UnaryOperator, UpdateExpression, UpdateOperator,
-        VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
+        Property, PropertyKind, RegExp, RegExpLiteral, ReturnStatement, SpreadElement, Statement,
+        StringLiteral, ThisExpression, UnaryExpression, UnaryOperator, UpdateExpression,
+        UpdateOperator, VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
     },
     lexer::{token::Token, Lexer},
     parser::function::FunctionKind,
@@ -74,6 +74,7 @@ impl<'src> Parser<'src> {
                 self.parse_labeled_statement()
             }
             Token::Function => self.parse_function_statement(),
+            Token::Return => self.parse_return_statement(),
             _ => Err(()),
         }
     }
@@ -552,6 +553,19 @@ impl<'src> Parser<'src> {
         })))
     }
 
+    fn parse_return_statement(&mut self) -> ParseResult<Statement> {
+        self.expect_current(Token::Return)?;
+
+        let argument = match self.current_token {
+            Token::Semicolon => None,
+            _ => Some(self.parse_assignment_expression()?),
+        };
+
+        self.eat_or_insert_semicolon();
+
+        Ok(Statement::ReturnStatement(ReturnStatement { argument }))
+    }
+
     fn parse_regular_expression_literal(&mut self) -> ParseResult<Expression> {
         let regex = self.lexer.read_regex(self.current_token.clone());
 
@@ -607,9 +621,10 @@ mod tests {
             BinaryExpression, BinaryOperator, BlockStatement, BooleanLiteral, BreakStatement,
             ContinueStatement, Declaration, Expression, Function, Identifier, LabeledStatement,
             Literal, LogicalExpression, LogicalOperator, NumberLiteral, ObjectExpression,
-            ObjectProperty, Pattern, Property, PropertyKind, SpreadElement, Statement,
-            StringLiteral, ThisExpression, UnaryExpression, UnaryOperator, UpdateExpression,
-            UpdateOperator, VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
+            ObjectProperty, Pattern, Property, PropertyKind, ReturnStatement, SpreadElement,
+            Statement, StringLiteral, ThisExpression, UnaryExpression, UnaryOperator,
+            UpdateExpression, UpdateOperator, VariableDeclaration, VariableDeclarationKind,
+            VariableDeclarator,
         },
         lexer::RegularExpressionFlags,
     };
@@ -745,10 +760,10 @@ mod tests {
                 ["computedString"]: 87 % 3,
                 ...{ ...spread3, test: true, ...spread4 },
                 hello() {
-                    var a = true;
+                    return 27 ** 34 + 2;
                 },
                 helloWithArgs(a, b) {
-                    var c = a + b;
+                    return;
                 },
                 ["hello" + "_" + "world"]() {
                     var hello = "world";
@@ -2029,19 +2044,19 @@ mod tests {
                                         id: None,
                                         params: vec![],
                                         body: BlockStatement {
-                                            body: vec![Statement::Declaration(
-                                                Declaration::VariableDeclaration(
-                                                    VariableDeclaration {
-                                                        kind: VariableDeclarationKind::Var,
-                                                        declarations: vec![VariableDeclarator {
-                                                            id: Pattern::Identifier(Identifier {
-                                                                name: "a".to_string()
-                                                            }),
-                                                            init: Some(literal_expr!(true))
-                                                        },]
-                                                    }
-                                                )
-                                            ),]
+                                            body: vec![Statement::ReturnStatement(
+                                                ReturnStatement {
+                                                    argument: Some(binary_expr!(
+                                                        binary_expr!(
+                                                            literal_expr!(27),
+                                                            literal_expr!(34),
+                                                            Exponentiation
+                                                        ),
+                                                        literal_expr!(2),
+                                                        Plus
+                                                    ))
+                                                }
+                                            )]
                                         }
                                     })),
                                     kind: PropertyKind::Init,
@@ -2055,23 +2070,9 @@ mod tests {
                                         id: None,
                                         params: vec![ident_pattern!("a"), ident_pattern!("b")],
                                         body: BlockStatement {
-                                            body: vec![Statement::Declaration(
-                                                Declaration::VariableDeclaration(
-                                                    VariableDeclaration {
-                                                        kind: VariableDeclarationKind::Var,
-                                                        declarations: vec![VariableDeclarator {
-                                                            id: Pattern::Identifier(Identifier {
-                                                                name: "c".to_string()
-                                                            }),
-                                                            init: Some(binary_expr!(
-                                                                ident_expr!("a"),
-                                                                ident_expr!("b"),
-                                                                Plus
-                                                            ))
-                                                        },]
-                                                    }
-                                                )
-                                            ),]
+                                            body: vec![Statement::ReturnStatement(
+                                                ReturnStatement { argument: None }
+                                            )]
                                         }
                                     })),
                                     kind: PropertyKind::Init,
