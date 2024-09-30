@@ -353,39 +353,44 @@ impl<'src> Parser<'src> {
                 break;
             }
 
-            let property = if matches!(self.current_token, Token::DotDotDot) {
-                self.expect_current(Token::DotDotDot)?;
-                ObjectProperty::SpreadElement(SpreadElement {
-                    argument: self.parse_assignment_expression()?,
-                })
-            } else {
-                let (key, computed) = self.parse_object_property_name()?;
-
-                if matches!(self.current_token, Token::Colon) {
-                    self.expect_current(Token::Colon)?;
-                    let value = self.parse_assignment_expression()?;
-
-                    ObjectProperty::Property(Property {
-                        key,
-                        value,
-                        kind: PropertyKind::Init,
-                        method: false,
-                        shorthand: false,
-                        computed,
+            let property = match self.current_token {
+                Token::DotDotDot => {
+                    self.expect_current(Token::DotDotDot)?;
+                    ObjectProperty::SpreadElement(SpreadElement {
+                        argument: self.parse_assignment_expression()?,
                     })
-                } else if matches!(self.current_token, Token::LeftParen) {
-                    let function = self.parse_function(FunctionKind::Expression)?;
+                }
+                Token::Get => self.parse_getter()?,
+                Token::Set => self.parse_setter()?,
+                _ => {
+                    let (key, computed) = self.parse_object_property_name()?;
 
-                    ObjectProperty::Property(Property {
-                        key,
-                        value: Expression::FunctionExpression(Box::new(function)),
-                        kind: PropertyKind::Init,
-                        method: true,
-                        shorthand: false,
-                        computed: false,
-                    })
-                } else {
-                    return Err(());
+                    if matches!(self.current_token, Token::Colon) {
+                        self.expect_current(Token::Colon)?;
+                        let value = self.parse_assignment_expression()?;
+
+                        ObjectProperty::Property(Property {
+                            key,
+                            value,
+                            kind: PropertyKind::Init,
+                            method: false,
+                            shorthand: false,
+                            computed,
+                        })
+                    } else if matches!(self.current_token, Token::LeftParen) {
+                        let function = self.parse_function(FunctionKind::Expression)?;
+
+                        ObjectProperty::Property(Property {
+                            key,
+                            value: Expression::FunctionExpression(Box::new(function)),
+                            kind: PropertyKind::Init,
+                            method: true,
+                            shorthand: false,
+                            computed: false,
+                        })
+                    } else {
+                        return Err(());
+                    }
                 }
             };
 
@@ -403,6 +408,40 @@ impl<'src> Parser<'src> {
         Ok(Expression::ObjectExpression(Box::new(ObjectExpression {
             properties,
         })))
+    }
+
+    fn parse_getter(&mut self) -> ParseResult<ObjectProperty> {
+        self.expect_current(Token::Get)?;
+
+        let (key, computed) = self.parse_object_property_name()?;
+
+        let function = self.parse_function(FunctionKind::Expression)?;
+
+        Ok(ObjectProperty::Property(Property {
+            key,
+            value: Expression::FunctionExpression(Box::new(function)),
+            kind: PropertyKind::Get,
+            method: false,
+            shorthand: false,
+            computed,
+        }))
+    }
+
+    fn parse_setter(&mut self) -> ParseResult<ObjectProperty> {
+        self.expect_current(Token::Set)?;
+
+        let (key, computed) = self.parse_object_property_name()?;
+
+        let function = self.parse_function(FunctionKind::Expression)?;
+
+        Ok(ObjectProperty::Property(Property {
+            key,
+            value: Expression::FunctionExpression(Box::new(function)),
+            kind: PropertyKind::Set,
+            method: false,
+            shorthand: false,
+            computed,
+        }))
     }
 
     fn parse_object_property_name(&mut self) -> ParseResult<(Expression, bool)> {
@@ -768,6 +807,12 @@ mod tests {
                 ["hello" + "_" + "world"]() {
                     var hello = "world";
                 },
+                get thing() {
+                    return 5;
+                },
+                set thing(value) {
+                    var a = value;
+                }
             };
             var func = function testFunction() {
                 var a = true;
@@ -2111,6 +2156,48 @@ mod tests {
                                     })),
                                     kind: PropertyKind::Init,
                                     method: true,
+                                    shorthand: false,
+                                    computed: false,
+                                }),
+                                ObjectProperty::Property(Property {
+                                    key: ident_expr!("thing"),
+                                    value: Expression::FunctionExpression(Box::new(Function {
+                                        id: None,
+                                        params: vec![],
+                                        body: BlockStatement {
+                                            body: vec![Statement::ReturnStatement(
+                                                ReturnStatement {
+                                                    argument: Some(literal_expr!(5))
+                                                }
+                                            )]
+                                        }
+                                    })),
+                                    kind: PropertyKind::Get,
+                                    method: false,
+                                    shorthand: false,
+                                    computed: false,
+                                }),
+                                ObjectProperty::Property(Property {
+                                    key: ident_expr!("thing"),
+                                    value: Expression::FunctionExpression(Box::new(Function {
+                                        id: None,
+                                        params: vec![ident_pattern!("value")],
+                                        body: BlockStatement {
+                                            body: vec![Statement::Declaration(
+                                                Declaration::VariableDeclaration(
+                                                    VariableDeclaration {
+                                                        kind: VariableDeclarationKind::Var,
+                                                        declarations: vec![VariableDeclarator {
+                                                            id: ident_pattern!("a"),
+                                                            init: Some(ident_expr!("value"))
+                                                        }]
+                                                    }
+                                                )
+                                            )]
+                                        }
+                                    })),
+                                    kind: PropertyKind::Set,
+                                    method: false,
                                     shorthand: false,
                                     computed: false,
                                 })
