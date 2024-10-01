@@ -1,3 +1,4 @@
+mod class;
 mod function;
 mod pattern;
 
@@ -245,6 +246,7 @@ impl<'src> Parser<'src> {
             Token::LeftBracket => self.parse_array_expression(),
             Token::LeftBrace => self.parse_object_expression(),
             Token::Function => self.parse_function_expression(),
+            Token::Class => self.parse_class_expression(),
             _ => Err(()),
         }
     }

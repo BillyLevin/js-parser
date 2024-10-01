@@ -132,6 +132,7 @@ pub enum Expression {
     ArrayExpression(Box<ArrayExpression>),
     ObjectExpression(Box<ObjectExpression>),
     FunctionExpression(Box<Function>),
+    ClassExpression(Box<Class>),
 }
 
 /// https://github.com/estree/estree/blob/master/es5.md#literal
@@ -525,4 +526,36 @@ pub struct Function {
     pub id: Option<Identifier>,
     pub params: Vec<Pattern>,
     pub body: BlockStatement,
+}
+
+/// https://github.com/estree/estree/blob/master/es2015.md#classes
+#[derive(Debug, PartialEq)]
+pub struct Class {
+    pub id: Option<Identifier>,
+    pub super_class: Option<Expression>,
+    pub body: ClassBody,
+}
+
+/// https://github.com/estree/estree/blob/master/es2015.md#classbody
+#[derive(Debug, PartialEq)]
+pub struct ClassBody {
+    pub body: Vec<MethodDefinition>,
+}
+
+/// https://github.com/estree/estree/blob/master/es2015.md#methoddefinition
+#[derive(Debug, PartialEq)]
+pub struct MethodDefinition {
+    pub key: Expression,
+    pub value: Function,
+    pub kind: ClassBodyKind,
+    pub computed: bool,
+    pub r#static: bool,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum ClassBodyKind {
+    Constructor,
+    Method,
+    Get,
+    Set,
 }

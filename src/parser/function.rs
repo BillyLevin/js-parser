@@ -89,7 +89,7 @@ impl<'src> Parser<'src> {
 
 #[cfg(test)]
 mod tests {
-    use test_utils::ident_pattern;
+    use test_utils::{binary_expr, ident_pattern, literal_expr};
 
     use super::*;
     use crate::{
@@ -100,41 +100,6 @@ mod tests {
         },
         lexer::Lexer,
     };
-
-    macro_rules! literal_expr {
-        (true) => {
-            Expression::Literal(Literal::BooleanLiteral(BooleanLiteral { value: true }))
-        };
-
-        (false) => {
-            Expression::Literal(Literal::BooleanLiteral(BooleanLiteral { value: false }))
-        };
-
-        (null) => {
-            Expression::Literal(Literal::NullLiteral)
-        };
-
-        ($lit:literal) => {
-            match $lit.to_string().parse::<f64>() {
-                Ok(num) => {
-                    Expression::Literal(Literal::NumberLiteral(NumberLiteral { value: num }))
-                }
-                _ => Expression::Literal(Literal::StringLiteral(StringLiteral {
-                    value: $lit.to_string(),
-                })),
-            }
-        };
-    }
-
-    macro_rules! binary_expr {
-        ($left:expr, $right:expr, $op:ident) => {
-            Expression::BinaryExpression(Box::new(BinaryExpression {
-                left: $left,
-                right: $right,
-                operator: BinaryOperator::$op,
-            }))
-        };
-    }
 
     #[test]
     fn parse_function() {
