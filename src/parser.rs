@@ -7,10 +7,11 @@ use crate::{
         ArrayElement, ArrayExpression, AssignmentExpression, AssignmentOperator, BinaryExpression,
         BinaryOperator, BlockStatement, BooleanLiteral, BreakStatement, ContinueStatement,
         Declaration, Expression, Identifier, LabeledStatement, Literal, LogicalExpression,
-        LogicalOperator, NumberLiteral, ObjectExpression, ObjectProperty, Operator, Program,
-        Property, PropertyKind, RegExp, RegExpLiteral, ReturnStatement, SpreadElement, Statement,
-        StringLiteral, ThisExpression, UnaryExpression, UnaryOperator, UpdateExpression,
-        UpdateOperator, VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
+        LogicalOperator, MemberExpression, NumberLiteral, ObjectExpression, ObjectProperty,
+        Operator, Program, Property, PropertyKind, RegExp, RegExpLiteral, ReturnStatement,
+        SpreadElement, Statement, StaticMemberExpression, StringLiteral, ThisExpression,
+        UnaryExpression, UnaryOperator, UpdateExpression, UpdateOperator, VariableDeclaration,
+        VariableDeclarationKind, VariableDeclarator,
     },
     lexer::{token::Token, Lexer},
     parser::function::FunctionKind,
@@ -214,7 +215,7 @@ impl<'src> Parser<'src> {
                 prefix: true,
             })))
         } else {
-            let lhs = self.parse_primary_expression()?;
+            let lhs = self.parse_left_hand_side_expression()?;
 
             if self.current_token.is_update_operator() {
                 let operator = UpdateOperator::from(&self.current_token);
@@ -228,6 +229,11 @@ impl<'src> Parser<'src> {
                 Ok(lhs)
             }
         }
+    }
+
+    /// https://tc39.es/ecma262/#prod-LeftHandSideExpression
+    fn parse_left_hand_side_expression(&mut self) -> ParseResult<Expression> {
+        self.parse_member_expression()
     }
 
     fn parse_primary_expression(&mut self) -> ParseResult<Expression> {
@@ -249,6 +255,44 @@ impl<'src> Parser<'src> {
             Token::Class => self.parse_class_expression(),
             _ => Err(()),
         }
+    }
+
+    fn parse_member_expression(&mut self) -> ParseResult<Expression> {
+        let object = self.parse_primary_expression()?;
+        self.parse_member_expression_property(object)
+    }
+
+    fn parse_member_expression_property(&mut self, object: Expression) -> ParseResult<Expression> {
+        let mut member_expression = object;
+
+        loop {
+            member_expression = match self.current_token {
+                Token::LeftBracket => todo!("computed property"),
+                Token::Dot => {
+                    self.next_token();
+
+                    let Token::Identifier(property_name) = &self.current_token else {
+                        return Err(());
+                    };
+
+                    let property = Identifier {
+                        name: property_name.to_string(),
+                    };
+
+                    self.next_token();
+
+                    Expression::MemberExpression(Box::new(MemberExpression::Static(
+                        StaticMemberExpression {
+                            object: member_expression,
+                            property,
+                        },
+                    )))
+                }
+                _ => break,
+            }
+        }
+
+        Ok(member_expression)
     }
 
     fn parse_string_literal(&mut self) -> ParseResult<Expression> {
@@ -663,9 +707,9 @@ mod tests {
             ContinueStatement, Declaration, Expression, Function, Identifier, LabeledStatement,
             Literal, LogicalExpression, LogicalOperator, NumberLiteral, ObjectExpression,
             ObjectProperty, Pattern, Property, PropertyKind, ReturnStatement, SpreadElement,
-            Statement, StringLiteral, ThisExpression, UnaryExpression, UnaryOperator,
-            UpdateExpression, UpdateOperator, VariableDeclaration, VariableDeclarationKind,
-            VariableDeclarator,
+            Statement, StaticMemberExpression, StringLiteral, ThisExpression, UnaryExpression,
+            UnaryOperator, UpdateExpression, UpdateOperator, VariableDeclaration,
+            VariableDeclarationKind, VariableDeclarator,
         },
         lexer::RegularExpressionFlags,
     };
@@ -820,6 +864,7 @@ mod tests {
                 var a = true;
                 var b = false, c = 4 ** 7 / 3;
             };
+            var thing = a.b.c;
         "#;
 
         let lexer = Lexer::new(input);
@@ -2102,6 +2147,27 @@ mod tests {
                                 ]
                             }
                         })))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: ident_pattern!("thing"),
+                        init: Some(Expression::MemberExpression(Box::new(
+                            MemberExpression::Static(StaticMemberExpression {
+                                object: Expression::MemberExpression(Box::new(
+                                    MemberExpression::Static(StaticMemberExpression {
+                                        object: ident_expr!("a"),
+                                        property: Identifier {
+                                            name: "b".to_string()
+                                        }
+                                    })
+                                )),
+                                property: Identifier {
+                                    name: "c".to_string()
+                                }
+                            })
+                        )))
                     }]
                 }))
             ]

@@ -127,6 +127,7 @@ pub enum Expression {
     AssignmentExpression(Box<AssignmentExpression>),
     UnaryExpression(Box<UnaryExpression>),
     UpdateExpression(Box<UpdateExpression>),
+    MemberExpression(Box<MemberExpression>),
     Identifier(Identifier),
     ThisExpression(ThisExpression),
     ArrayExpression(Box<ArrayExpression>),
@@ -558,4 +559,23 @@ pub enum ClassBodyKind {
     Method,
     Get,
     Set,
+}
+
+/// https://github.com/estree/estree/blob/master/es5.md#memberexpression
+#[derive(Debug, PartialEq)]
+pub enum MemberExpression {
+    Static(StaticMemberExpression),
+    Computed(ComputedMemberExpression),
+}
+
+#[derive(Debug, PartialEq)]
+pub struct StaticMemberExpression {
+    pub object: Expression,
+    pub property: Identifier,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct ComputedMemberExpression {
+    object: Expression,
+    property: Expression,
 }
