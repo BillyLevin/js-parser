@@ -76,7 +76,7 @@ impl<'src> Parser<'src> {
 
 #[cfg(test)]
 mod tests {
-    use test_utils::{binary_expr, ident_pattern, literal_expr};
+    use test_utils::{binary_expr, ident, ident_pattern, literal_expr};
 
     use super::*;
     use crate::{
@@ -117,9 +117,7 @@ mod tests {
             program.body,
             vec![
                 Statement::Declaration(Declaration::FunctionDeclaration(Function {
-                    id: Some(Identifier {
-                        name: "noParams".to_string()
-                    }),
+                    id: Some(ident!("noParams")),
                     params: vec![],
                     body: BlockStatement {
                         body: vec![Statement::Declaration(Declaration::VariableDeclaration(
@@ -138,9 +136,7 @@ mod tests {
                     declarations: vec![VariableDeclarator {
                         id: ident_pattern!("noParams2"),
                         init: Some(Expression::FunctionExpression(Box::new(Function {
-                            id: Some(Identifier {
-                                name: "someName".to_string()
-                            }),
+                            id: Some(ident!("someName")),
                             params: vec![],
                             body: BlockStatement {
                                 body: vec![Statement::Declaration(
@@ -178,9 +174,7 @@ mod tests {
                     }]
                 })),
                 Statement::Declaration(Declaration::FunctionDeclaration(Function {
-                    id: Some(Identifier {
-                        name: "basicParams".to_string()
-                    }),
+                    id: Some(ident!("basicParams")),
                     params: vec![
                         ident_pattern!("a"),
                         ident_pattern!("b"),

@@ -127,3 +127,12 @@ macro_rules! assign_pattern {
         }))
     };
 }
+
+#[macro_export]
+macro_rules! ident {
+    ($ident:expr) => {
+        Identifier {
+            name: $ident.to_string(),
+        }
+    };
+}

@@ -32,7 +32,7 @@ impl<'src> Parser<'src> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use test_utils::ident_pattern;
+    use test_utils::{ident, ident_pattern};
 
     use crate::{
         ast::{
@@ -73,9 +73,7 @@ mod tests {
                     declarations: vec![VariableDeclarator {
                         id: ident_pattern!("emptyNamedClass"),
                         init: Some(Expression::ClassExpression(Box::new(Class {
-                            id: Some(Identifier {
-                                name: "NamedClass".to_string()
-                            }),
+                            id: Some(ident!("NamedClass")),
                             super_class: None,
                             body: ClassBody { body: vec![] }
                         })))

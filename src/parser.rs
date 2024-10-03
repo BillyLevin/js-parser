@@ -683,7 +683,7 @@ impl<'src> Parser<'src> {
 #[cfg(test)]
 mod tests {
     use test_utils::{
-        array_expr_element, array_spread_element, assign_expr, binary_expr, ident_expr,
+        array_expr_element, array_spread_element, assign_expr, binary_expr, ident, ident_expr,
         ident_pattern, literal_expr, logical_expr, unary_expr, update_expr,
     };
 
@@ -2094,9 +2094,7 @@ mod tests {
                     declarations: vec![VariableDeclarator {
                         id: ident_pattern!("func"),
                         init: Some(Expression::FunctionExpression(Box::new(Function {
-                            id: Some(Identifier {
-                                name: "testFunction".to_string()
-                            }),
+                            id: Some(ident!("testFunction")),
                             params: vec![],
                             body: BlockStatement {
                                 body: vec![
@@ -2146,14 +2144,10 @@ mod tests {
                                 object: Expression::MemberExpression(Box::new(
                                     MemberExpression::Static(StaticMemberExpression {
                                         object: ident_expr!("a"),
-                                        property: Identifier {
-                                            name: "b".to_string()
-                                        }
+                                        property: ident!("b")
                                     })
                                 )),
-                                property: Identifier {
-                                    name: "c".to_string()
-                                }
+                                property: ident!("c")
                             })
                         )))
                     }]
@@ -2167,9 +2161,7 @@ mod tests {
                                 object: Expression::MemberExpression(Box::new(
                                     MemberExpression::Static(StaticMemberExpression {
                                         object: ident_expr!("a"),
-                                        property: Identifier {
-                                            name: "b".to_string()
-                                        }
+                                        property: ident!("b")
                                     })
                                 )),
                                 property: binary_expr!(
@@ -2214,16 +2206,12 @@ mod tests {
                 Statement::BreakStatement(BreakStatement { label: None }),
                 Statement::BreakStatement(BreakStatement { label: None }),
                 Statement::BreakStatement(BreakStatement {
-                    label: Some(Identifier {
-                        name: "someLabel".to_string()
-                    })
+                    label: Some(ident!("someLabel"))
                 }),
                 Statement::ContinueStatement(ContinueStatement { label: None }),
                 Statement::ContinueStatement(ContinueStatement { label: None }),
                 Statement::ContinueStatement(ContinueStatement {
-                    label: Some(Identifier {
-                        name: "someLabel".to_string()
-                    })
+                    label: Some(ident!("someLabel"))
                 }),
             ]
         );
@@ -2276,9 +2264,7 @@ mod tests {
                         Statement::BreakStatement(BreakStatement { label: None }),
                         Statement::BreakStatement(BreakStatement { label: None }),
                         Statement::BreakStatement(BreakStatement {
-                            label: Some(Identifier {
-                                name: "someLabel".to_string()
-                            })
+                            label: Some(ident!("someLabel"))
                         }),
                     ]
                 }),
@@ -2287,9 +2273,7 @@ mod tests {
                         Statement::ContinueStatement(ContinueStatement { label: None }),
                         Statement::ContinueStatement(ContinueStatement { label: None }),
                         Statement::ContinueStatement(ContinueStatement {
-                            label: Some(Identifier {
-                                name: "someLabel".to_string()
-                            })
+                            label: Some(ident!("someLabel"))
                         }),
                     ]
                 }),
@@ -2345,9 +2329,7 @@ mod tests {
             program.body,
             vec![
                 Statement::LabeledStatement(Box::new(LabeledStatement {
-                    label: Identifier {
-                        name: "myLabel123".to_string()
-                    },
+                    label: ident!("myLabel123"),
                     body: Statement::Declaration(Declaration::VariableDeclaration(
                         VariableDeclaration {
                             kind: VariableDeclarationKind::Var,
@@ -2359,9 +2341,7 @@ mod tests {
                     ))
                 })),
                 Statement::LabeledStatement(Box::new(LabeledStatement {
-                    label: Identifier {
-                        name: "$label_456".to_string()
-                    },
+                    label: ident!("$label_456"),
                     body: Statement::Declaration(Declaration::VariableDeclaration(
                         VariableDeclaration {
                             kind: VariableDeclarationKind::Var,
