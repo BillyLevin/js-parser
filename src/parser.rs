@@ -271,15 +271,7 @@ impl<'src> Parser<'src> {
                 Token::Dot => {
                     self.next_token();
 
-                    let Token::Identifier(property_name) = &self.current_token else {
-                        return Err(());
-                    };
-
-                    let property = Identifier {
-                        name: property_name.to_string(),
-                    };
-
-                    self.next_token();
+                    let property = self.parse_identifier()?;
 
                     Expression::MemberExpression(Box::new(MemberExpression::Static(
                         StaticMemberExpression {
@@ -514,6 +506,11 @@ impl<'src> Parser<'src> {
     }
 
     fn parse_identifier_expression(&mut self) -> ParseResult<Expression> {
+        let identifier = self.parse_identifier()?;
+        Ok(Expression::Identifier(identifier))
+    }
+
+    fn parse_identifier(&mut self) -> ParseResult<Identifier> {
         let Token::Identifier(identifier) = &self.current_token else {
             return Err(());
         };
@@ -522,7 +519,7 @@ impl<'src> Parser<'src> {
 
         self.next_token();
 
-        Ok(Expression::Identifier(Identifier { name }))
+        Ok(Identifier { name })
     }
 
     fn parse_this_expression(&mut self) -> ParseResult<Expression> {
@@ -552,17 +549,10 @@ impl<'src> Parser<'src> {
     fn parse_break_statement(&mut self) -> ParseResult<Statement> {
         self.next_token();
 
-        let identifier = if let Token::Identifier(name) = &self.current_token {
-            Some(Identifier {
-                name: name.to_string(),
-            })
-        } else {
-            None
+        let identifier = match self.parse_identifier() {
+            Ok(identifier) => Some(identifier),
+            Err(_) => None,
         };
-
-        if identifier.is_some() {
-            self.next_token();
-        }
 
         self.eat_or_insert_semicolon();
 
@@ -574,17 +564,10 @@ impl<'src> Parser<'src> {
     fn parse_continue_statement(&mut self) -> ParseResult<Statement> {
         self.next_token();
 
-        let identifier = if let Token::Identifier(name) = &self.current_token {
-            Some(Identifier {
-                name: name.to_string(),
-            })
-        } else {
-            None
+        let identifier = match self.parse_identifier() {
+            Ok(identifier) => Some(identifier),
+            Err(_) => None,
         };
-
-        if identifier.is_some() {
-            self.next_token();
-        }
 
         self.eat_or_insert_semicolon();
 
@@ -619,21 +602,14 @@ impl<'src> Parser<'src> {
     }
 
     fn parse_labeled_statement(&mut self) -> ParseResult<Statement> {
-        let Token::Identifier(ref identifier) = self.current_token else {
-            self.errors
-                .push(format!("expected identifier, got {}", self.current_token));
-            return Err(());
-        };
+        let identifier = self.parse_identifier()?;
 
-        let identifier = identifier.to_string();
-
-        self.next_token();
         self.expect_current(Token::Colon)?;
 
         let statement = self.parse_statement()?;
 
         Ok(Statement::LabeledStatement(Box::new(LabeledStatement {
-            label: Identifier { name: identifier },
+            label: identifier,
             body: statement,
         })))
     }

@@ -34,14 +34,7 @@ impl<'src> Parser<'src> {
                 FunctionKind::Expression => None,
             }
         } else {
-            let Token::Identifier(identifier) = &self.current_token else {
-                return Err(());
-            };
-
-            let name = identifier.to_string();
-            self.next_token();
-
-            Some(Identifier { name })
+            Some(self.parse_identifier()?)
         };
 
         let params = self.parse_function_params()?;
@@ -64,15 +57,9 @@ impl<'src> Parser<'src> {
                 break;
             }
 
-            let Token::Identifier(identifier) = &self.current_token else {
-                return Err(());
-            };
+            let identifier = self.parse_identifier()?;
 
-            params.push(Pattern::Identifier(Identifier {
-                name: identifier.to_string(),
-            }));
-
-            self.next_token();
+            params.push(Pattern::Identifier(identifier));
 
             if matches!(self.current_token, Token::Comma) {
                 self.next_token();
