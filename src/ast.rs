@@ -576,6 +576,6 @@ pub struct StaticMemberExpression {
 
 #[derive(Debug, PartialEq)]
 pub struct ComputedMemberExpression {
-    object: Expression,
-    property: Expression,
+    pub object: Expression,
+    pub property: Expression,
 }

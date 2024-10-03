@@ -5,13 +5,13 @@ mod pattern;
 use crate::{
     ast::{
         ArrayElement, ArrayExpression, AssignmentExpression, AssignmentOperator, BinaryExpression,
-        BinaryOperator, BlockStatement, BooleanLiteral, BreakStatement, ContinueStatement,
-        Declaration, Expression, Identifier, LabeledStatement, Literal, LogicalExpression,
-        LogicalOperator, MemberExpression, NumberLiteral, ObjectExpression, ObjectProperty,
-        Operator, Program, Property, PropertyKind, RegExp, RegExpLiteral, ReturnStatement,
-        SpreadElement, Statement, StaticMemberExpression, StringLiteral, ThisExpression,
-        UnaryExpression, UnaryOperator, UpdateExpression, UpdateOperator, VariableDeclaration,
-        VariableDeclarationKind, VariableDeclarator,
+        BinaryOperator, BlockStatement, BooleanLiteral, BreakStatement, ComputedMemberExpression,
+        ContinueStatement, Declaration, Expression, Identifier, LabeledStatement, Literal,
+        LogicalExpression, LogicalOperator, MemberExpression, NumberLiteral, ObjectExpression,
+        ObjectProperty, Operator, Program, Property, PropertyKind, RegExp, RegExpLiteral,
+        ReturnStatement, SpreadElement, Statement, StaticMemberExpression, StringLiteral,
+        ThisExpression, UnaryExpression, UnaryOperator, UpdateExpression, UpdateOperator,
+        VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
     },
     lexer::{token::Token, Lexer},
     parser::function::FunctionKind,
@@ -267,7 +267,18 @@ impl<'src> Parser<'src> {
 
         loop {
             member_expression = match self.current_token {
-                Token::LeftBracket => todo!("computed property"),
+                Token::LeftBracket => {
+                    self.next_token();
+
+                    let property = self.parse_assignment_expression()?;
+
+                    Expression::MemberExpression(Box::new(MemberExpression::Computed(
+                        ComputedMemberExpression {
+                            object: member_expression,
+                            property,
+                        },
+                    )))
+                }
                 Token::Dot => {
                     self.next_token();
 
@@ -680,12 +691,12 @@ mod tests {
         ast::{
             ArrayElement, ArrayExpression, AssignmentExpression, AssignmentOperator,
             BinaryExpression, BinaryOperator, BlockStatement, BooleanLiteral, BreakStatement,
-            ContinueStatement, Declaration, Expression, Function, Identifier, LabeledStatement,
-            Literal, LogicalExpression, LogicalOperator, NumberLiteral, ObjectExpression,
-            ObjectProperty, Pattern, Property, PropertyKind, ReturnStatement, SpreadElement,
-            Statement, StaticMemberExpression, StringLiteral, ThisExpression, UnaryExpression,
-            UnaryOperator, UpdateExpression, UpdateOperator, VariableDeclaration,
-            VariableDeclarationKind, VariableDeclarator,
+            ComputedMemberExpression, ContinueStatement, Declaration, Expression, Function,
+            Identifier, LabeledStatement, Literal, LogicalExpression, LogicalOperator,
+            NumberLiteral, ObjectExpression, ObjectProperty, Pattern, Property, PropertyKind,
+            ReturnStatement, SpreadElement, Statement, StaticMemberExpression, StringLiteral,
+            ThisExpression, UnaryExpression, UnaryOperator, UpdateExpression, UpdateOperator,
+            VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
         },
         lexer::RegularExpressionFlags,
     };
@@ -841,6 +852,7 @@ mod tests {
                 var b = false, c = 4 ** 7 / 3;
             };
             var thing = a.b.c;
+            var thing = a.b["hello" + "_" + "world"];
         "#;
 
         let lexer = Lexer::new(input);
@@ -2142,6 +2154,29 @@ mod tests {
                                 property: Identifier {
                                     name: "c".to_string()
                                 }
+                            })
+                        )))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: ident_pattern!("thing"),
+                        init: Some(Expression::MemberExpression(Box::new(
+                            MemberExpression::Computed(ComputedMemberExpression {
+                                object: Expression::MemberExpression(Box::new(
+                                    MemberExpression::Static(StaticMemberExpression {
+                                        object: ident_expr!("a"),
+                                        property: Identifier {
+                                            name: "b".to_string()
+                                        }
+                                    })
+                                )),
+                                property: binary_expr!(
+                                    binary_expr!(literal_expr!("hello"), literal_expr!("_"), Plus),
+                                    literal_expr!("world"),
+                                    Plus
+                                )
                             })
                         )))
                     }]
