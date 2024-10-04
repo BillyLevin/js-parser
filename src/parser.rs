@@ -9,9 +9,9 @@ use crate::{
         ContinueStatement, Declaration, Expression, Identifier, LabeledStatement, Literal,
         LogicalExpression, LogicalOperator, MemberExpression, NumberLiteral, ObjectExpression,
         ObjectProperty, Operator, Program, Property, PropertyKind, RegExp, RegExpLiteral,
-        ReturnStatement, SpreadElement, Statement, StaticMemberExpression, StringLiteral,
-        ThisExpression, UnaryExpression, UnaryOperator, UpdateExpression, UpdateOperator,
-        VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
+        ReturnStatement, SequenceExpression, SpreadElement, Statement, StaticMemberExpression,
+        StringLiteral, ThisExpression, UnaryExpression, UnaryOperator, UpdateExpression,
+        UpdateOperator, VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
     },
     lexer::{token::Token, Lexer},
     parser::function::FunctionKind,
@@ -123,6 +123,30 @@ impl<'src> Parser<'src> {
             id,
             init: initializer,
         })
+    }
+
+    /// https://tc39.es/ecma262/#prod-Expression
+    fn parse_expression(&mut self) -> ParseResult<Expression> {
+        let expr = self.parse_assignment_expression()?;
+
+        if matches!(self.current_token, Token::Comma) {
+            let mut expressions = vec![expr];
+
+            loop {
+                self.next_token();
+                expressions.push(self.parse_assignment_expression()?);
+
+                if !matches!(self.current_token, Token::Comma) {
+                    break;
+                }
+            }
+
+            Ok(Expression::SequenceExpression(Box::new(
+                SequenceExpression { expressions },
+            )))
+        } else {
+            Ok(expr)
+        }
     }
 
     /// note that the [`AssignmentExpression`](https://tc39.es/ecma262/#prod-AssignmentExpression) from the ECMAScript spec is more broad than the
@@ -270,7 +294,9 @@ impl<'src> Parser<'src> {
                 Token::LeftBracket => {
                     self.next_token();
 
-                    let property = self.parse_assignment_expression()?;
+                    let property = self.parse_expression()?;
+
+                    self.expect_current(Token::RightBracket)?;
 
                     Expression::MemberExpression(Box::new(MemberExpression::Computed(
                         ComputedMemberExpression {
@@ -694,9 +720,9 @@ mod tests {
             ComputedMemberExpression, ContinueStatement, Declaration, Expression, Function,
             Identifier, LabeledStatement, Literal, LogicalExpression, LogicalOperator,
             NumberLiteral, ObjectExpression, ObjectProperty, Pattern, Property, PropertyKind,
-            ReturnStatement, SpreadElement, Statement, StaticMemberExpression, StringLiteral,
-            ThisExpression, UnaryExpression, UnaryOperator, UpdateExpression, UpdateOperator,
-            VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
+            ReturnStatement, SequenceExpression, SpreadElement, Statement, StaticMemberExpression,
+            StringLiteral, ThisExpression, UnaryExpression, UnaryOperator, UpdateExpression,
+            UpdateOperator, VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
         },
         lexer::RegularExpressionFlags,
     };
@@ -853,6 +879,7 @@ mod tests {
             };
             var thing = a.b.c;
             var thing = a.b["hello" + "_" + "world"];
+            var thing = a[4 + 3, 5];
         "#;
 
         let lexer = Lexer::new(input);
@@ -2169,6 +2196,25 @@ mod tests {
                                     literal_expr!("world"),
                                     Plus
                                 )
+                            })
+                        )))
+                    }]
+                })),
+                Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
+                    kind: VariableDeclarationKind::Var,
+                    declarations: vec![VariableDeclarator {
+                        id: ident_pattern!("thing"),
+                        init: Some(Expression::MemberExpression(Box::new(
+                            MemberExpression::Computed(ComputedMemberExpression {
+                                object: ident_expr!("a"),
+                                property: Expression::SequenceExpression(Box::new(
+                                    SequenceExpression {
+                                        expressions: vec![
+                                            binary_expr!(literal_expr!(4), literal_expr!(3), Plus),
+                                            literal_expr!(5)
+                                        ]
+                                    }
+                                ))
                             })
                         )))
                     }]

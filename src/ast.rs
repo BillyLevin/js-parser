@@ -134,6 +134,7 @@ pub enum Expression {
     ObjectExpression(Box<ObjectExpression>),
     FunctionExpression(Box<Function>),
     ClassExpression(Box<Class>),
+    SequenceExpression(Box<SequenceExpression>),
 }
 
 /// https://github.com/estree/estree/blob/master/es5.md#literal
@@ -578,4 +579,10 @@ pub struct StaticMemberExpression {
 pub struct ComputedMemberExpression {
     pub object: Expression,
     pub property: Expression,
+}
+
+/// https://github.com/estree/estree/blob/master/es5.md#sequenceexpression
+#[derive(Debug, PartialEq)]
+pub struct SequenceExpression {
+    pub expressions: Vec<Expression>,
 }
