@@ -87,7 +87,7 @@ impl<'src> Parser<'src> {
             let property = if is_rest {
                 self.parse_rest_element()?
             } else {
-                let (key, computed) = self.parse_object_property_name()?;
+                let (key, computed) = self.parse_property_name()?;
                 let is_shorthand = !computed && !matches!(self.current_token, Token::Colon);
 
                 if is_shorthand {

@@ -136,3 +136,25 @@ macro_rules! ident {
         }
     };
 }
+
+#[macro_export]
+macro_rules! static_member_expr {
+    ($object:expr, $property:expr) => {
+        Expression::MemberExpression(Box::new(MemberExpression::Static(StaticMemberExpression {
+            object: $object,
+            property: $property,
+        })))
+    };
+}
+
+#[macro_export]
+macro_rules! computed_member_expr {
+    ($object:expr, $property:expr) => {
+        Expression::MemberExpression(Box::new(MemberExpression::Computed(
+            ComputedMemberExpression {
+                object: $object,
+                property: $property,
+            },
+        )))
+    };
+}

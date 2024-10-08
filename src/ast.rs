@@ -17,7 +17,7 @@ pub enum Statement {
     // declarations
     BlockStatement(BlockStatement),
     EmptyStatement,
-    ExpressionStatement,
+    ExpressionStatement(ExpressionStatement),
     IfStatement,
     BreakableStatement,
     ContinueStatement(ContinueStatement),
@@ -118,6 +118,11 @@ pub struct Identifier {
     pub name: String,
 }
 
+#[derive(Debug, PartialEq)]
+pub struct PrivateIdentifier {
+    pub name: String,
+}
+
 /// https://github.com/estree/estree/blob/master/es5.md#expressions
 #[derive(Debug, PartialEq)]
 pub enum Expression {
@@ -195,6 +200,12 @@ pub struct ContinueStatement {
 #[derive(Debug, PartialEq)]
 pub struct BlockStatement {
     pub body: Vec<Statement>,
+}
+
+/// https://github.com/estree/estree/blob/master/es5.md#expressionstatement
+#[derive(Debug, PartialEq)]
+pub struct ExpressionStatement {
+    pub expression: Expression,
 }
 
 /// https://github.com/estree/estree/blob/master/es5.md#labeledstatement
@@ -280,19 +291,19 @@ impl From<&Token> for BinaryOperator {
             Token::LeftShift => BinaryOperator::LeftShift,
             Token::RightShift => BinaryOperator::RightShift,
             Token::UnsignedRightShift => BinaryOperator::UnsignedRightShift,
-            Token::LessThan => BinaryOperator::LessThan, 
-            Token::LessThanEqual => BinaryOperator::LessThanEqual, 
-            Token::GreaterThan => BinaryOperator::GreaterThan, 
-            Token::GreaterThanEqual => BinaryOperator::GreaterThanEqual, 
-            Token::In => BinaryOperator::In, 
-            Token::Instanceof => BinaryOperator::Instanceof, 
-            Token::DoubleEqual => BinaryOperator::DoubleEqual, 
-            Token::NotDoubleEqual => BinaryOperator::NotDoubleEqual, 
-            Token::TripleEqual => BinaryOperator::TripleEqual, 
-            Token::NotTripleEqual => BinaryOperator::NotTripleEqual, 
-            Token::BitwiseAnd => BinaryOperator::BitwiseAnd, 
-            Token::BitwiseXor => BinaryOperator::BitwiseXor, 
-            Token::BitwiseOr => BinaryOperator::BitwiseOr, 
+            Token::LessThan => BinaryOperator::LessThan,
+            Token::LessThanEqual => BinaryOperator::LessThanEqual,
+            Token::GreaterThan => BinaryOperator::GreaterThan,
+            Token::GreaterThanEqual => BinaryOperator::GreaterThanEqual,
+            Token::In => BinaryOperator::In,
+            Token::Instanceof => BinaryOperator::Instanceof,
+            Token::DoubleEqual => BinaryOperator::DoubleEqual,
+            Token::NotDoubleEqual => BinaryOperator::NotDoubleEqual,
+            Token::TripleEqual => BinaryOperator::TripleEqual,
+            Token::NotTripleEqual => BinaryOperator::NotTripleEqual,
+            Token::BitwiseAnd => BinaryOperator::BitwiseAnd,
+            Token::BitwiseXor => BinaryOperator::BitwiseXor,
+            Token::BitwiseOr => BinaryOperator::BitwiseOr,
             _ => unreachable!("this function should only be called with tokens that can be mapped to a binary operation"),
         }
     }
@@ -429,13 +440,13 @@ pub enum UnaryOperator {
 impl From<&Token> for UnaryOperator {
     fn from(token: &Token) -> Self {
         match token {
-           Token::Minus => UnaryOperator::Minus, 
-           Token::Plus => UnaryOperator::Plus, 
-           Token::Bang => UnaryOperator::LogicalNot, 
-           Token::BitwiseNot => UnaryOperator::BitwiseNot, 
-           Token::Typeof => UnaryOperator::Typeof, 
-           Token::Void => UnaryOperator::Void, 
-           Token::Delete => UnaryOperator::Delete, 
+           Token::Minus => UnaryOperator::Minus,
+           Token::Plus => UnaryOperator::Plus,
+           Token::Bang => UnaryOperator::LogicalNot,
+           Token::BitwiseNot => UnaryOperator::BitwiseNot,
+           Token::Typeof => UnaryOperator::Typeof,
+           Token::Void => UnaryOperator::Void,
+           Token::Delete => UnaryOperator::Delete,
             _ => unreachable!("this function should only be called with tokens that can be mapped to an unary operation"),
         }
     }
@@ -541,7 +552,15 @@ pub struct Class {
 /// https://github.com/estree/estree/blob/master/es2015.md#classbody
 #[derive(Debug, PartialEq)]
 pub struct ClassBody {
-    pub body: Vec<MethodDefinition>,
+    pub body: Vec<ClassElement>,
+}
+
+/// https://github.com/estree/estree/blob/master/es2022.md#classbody
+#[derive(Debug, PartialEq)]
+pub enum ClassElement {
+    MethodDefinition(MethodDefinition),
+    PropertyDefinition,
+    StaticBlock,
 }
 
 /// https://github.com/estree/estree/blob/master/es2015.md#methoddefinition
@@ -549,13 +568,13 @@ pub struct ClassBody {
 pub struct MethodDefinition {
     pub key: Expression,
     pub value: Function,
-    pub kind: ClassBodyKind,
+    pub kind: MethodDefinitionKind,
     pub computed: bool,
     pub r#static: bool,
 }
 
 #[derive(Debug, PartialEq)]
-pub enum ClassBodyKind {
+pub enum MethodDefinitionKind {
     Constructor,
     Method,
     Get,

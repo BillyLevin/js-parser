@@ -6,12 +6,13 @@ use crate::{
     ast::{
         ArrayElement, ArrayExpression, AssignmentExpression, AssignmentOperator, BinaryExpression,
         BinaryOperator, BlockStatement, BooleanLiteral, BreakStatement, ComputedMemberExpression,
-        ContinueStatement, Declaration, Expression, Identifier, LabeledStatement, Literal,
-        LogicalExpression, LogicalOperator, MemberExpression, NumberLiteral, ObjectExpression,
-        ObjectProperty, Operator, Program, Property, PropertyKind, RegExp, RegExpLiteral,
-        ReturnStatement, SequenceExpression, SpreadElement, Statement, StaticMemberExpression,
-        StringLiteral, ThisExpression, UnaryExpression, UnaryOperator, UpdateExpression,
-        UpdateOperator, VariableDeclaration, VariableDeclarationKind, VariableDeclarator,
+        ContinueStatement, Declaration, Expression, ExpressionStatement, Identifier,
+        LabeledStatement, Literal, LogicalExpression, LogicalOperator, MemberExpression,
+        NumberLiteral, ObjectExpression, ObjectProperty, Operator, PrivateIdentifier, Program,
+        Property, PropertyKind, RegExp, RegExpLiteral, ReturnStatement, SequenceExpression,
+        SpreadElement, Statement, StaticMemberExpression, StringLiteral, ThisExpression,
+        UnaryExpression, UnaryOperator, UpdateExpression, UpdateOperator, VariableDeclaration,
+        VariableDeclarationKind, VariableDeclarator,
     },
     lexer::{token::Token, Lexer},
     parser::function::FunctionKind,
@@ -77,7 +78,7 @@ impl<'src> Parser<'src> {
             }
             Token::Function => self.parse_function_statement(),
             Token::Return => self.parse_return_statement(),
-            _ => Err(()),
+            _ => self.parse_expression_statement(),
         }
     }
 
@@ -438,7 +439,7 @@ impl<'src> Parser<'src> {
                 Token::Get => self.parse_getter()?,
                 Token::Set => self.parse_setter()?,
                 _ => {
-                    let (key, computed) = self.parse_object_property_name()?;
+                    let (key, computed) = self.parse_property_name()?;
 
                     if matches!(self.current_token, Token::Colon) {
                         self.expect_current(Token::Colon)?;
@@ -488,7 +489,7 @@ impl<'src> Parser<'src> {
     fn parse_getter(&mut self) -> ParseResult<ObjectProperty> {
         self.expect_current(Token::Get)?;
 
-        let (key, computed) = self.parse_object_property_name()?;
+        let (key, computed) = self.parse_property_name()?;
 
         let function = self.parse_function(FunctionKind::Expression)?;
 
@@ -505,7 +506,7 @@ impl<'src> Parser<'src> {
     fn parse_setter(&mut self) -> ParseResult<ObjectProperty> {
         self.expect_current(Token::Set)?;
 
-        let (key, computed) = self.parse_object_property_name()?;
+        let (key, computed) = self.parse_property_name()?;
 
         let function = self.parse_function(FunctionKind::Expression)?;
 
@@ -519,7 +520,8 @@ impl<'src> Parser<'src> {
         }))
     }
 
-    fn parse_object_property_name(&mut self) -> ParseResult<(Expression, bool)> {
+    /// https://tc39.es/ecma262/#prod-PropertyName
+    fn parse_property_name(&mut self) -> ParseResult<(Expression, bool)> {
         let mut is_computed = false;
 
         let property_name = match self.current_token {
@@ -557,6 +559,18 @@ impl<'src> Parser<'src> {
         self.next_token();
 
         Ok(Identifier { name })
+    }
+
+    fn parse_private_identifier(&mut self) -> ParseResult<PrivateIdentifier> {
+        let Token::PrivateIdentifier(identifier) = &self.current_token else {
+            return Err(());
+        };
+
+        let name = identifier.to_string();
+
+        self.next_token();
+
+        Ok(PrivateIdentifier { name })
     }
 
     fn parse_this_expression(&mut self) -> ParseResult<Expression> {
@@ -664,6 +678,16 @@ impl<'src> Parser<'src> {
         Ok(Statement::ReturnStatement(ReturnStatement { argument }))
     }
 
+    fn parse_expression_statement(&mut self) -> ParseResult<Statement> {
+        let expression = self.parse_expression()?;
+
+        self.eat_or_insert_semicolon();
+
+        Ok(Statement::ExpressionStatement(ExpressionStatement {
+            expression,
+        }))
+    }
+
     fn parse_regular_expression_literal(&mut self) -> ParseResult<Expression> {
         let regex = self.lexer.read_regex(self.current_token.clone());
 
@@ -709,8 +733,9 @@ impl<'src> Parser<'src> {
 #[cfg(test)]
 mod tests {
     use test_utils::{
-        array_expr_element, array_spread_element, assign_expr, binary_expr, ident, ident_expr,
-        ident_pattern, literal_expr, logical_expr, unary_expr, update_expr,
+        array_expr_element, array_spread_element, assign_expr, binary_expr, computed_member_expr,
+        ident, ident_expr, ident_pattern, literal_expr, logical_expr, static_member_expr,
+        unary_expr, update_expr,
     };
 
     use crate::{
@@ -2166,57 +2191,39 @@ mod tests {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
                         id: ident_pattern!("thing"),
-                        init: Some(Expression::MemberExpression(Box::new(
-                            MemberExpression::Static(StaticMemberExpression {
-                                object: Expression::MemberExpression(Box::new(
-                                    MemberExpression::Static(StaticMemberExpression {
-                                        object: ident_expr!("a"),
-                                        property: ident!("b")
-                                    })
-                                )),
-                                property: ident!("c")
-                            })
-                        )))
+                        init: Some(static_member_expr!(
+                            static_member_expr!(ident_expr!("a"), ident!("b")),
+                            ident!("c")
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
                         id: ident_pattern!("thing"),
-                        init: Some(Expression::MemberExpression(Box::new(
-                            MemberExpression::Computed(ComputedMemberExpression {
-                                object: Expression::MemberExpression(Box::new(
-                                    MemberExpression::Static(StaticMemberExpression {
-                                        object: ident_expr!("a"),
-                                        property: ident!("b")
-                                    })
-                                )),
-                                property: binary_expr!(
-                                    binary_expr!(literal_expr!("hello"), literal_expr!("_"), Plus),
-                                    literal_expr!("world"),
-                                    Plus
-                                )
-                            })
-                        )))
+                        init: Some(computed_member_expr!(
+                            static_member_expr!(ident_expr!("a"), ident!("b")),
+                            binary_expr!(
+                                binary_expr!(literal_expr!("hello"), literal_expr!("_"), Plus),
+                                literal_expr!("world"),
+                                Plus
+                            )
+                        ))
                     }]
                 })),
                 Statement::Declaration(Declaration::VariableDeclaration(VariableDeclaration {
                     kind: VariableDeclarationKind::Var,
                     declarations: vec![VariableDeclarator {
                         id: ident_pattern!("thing"),
-                        init: Some(Expression::MemberExpression(Box::new(
-                            MemberExpression::Computed(ComputedMemberExpression {
-                                object: ident_expr!("a"),
-                                property: Expression::SequenceExpression(Box::new(
-                                    SequenceExpression {
-                                        expressions: vec![
-                                            binary_expr!(literal_expr!(4), literal_expr!(3), Plus),
-                                            literal_expr!(5)
-                                        ]
-                                    }
-                                ))
-                            })
-                        )))
+                        init: Some(computed_member_expr!(
+                            ident_expr!("a"),
+                            Expression::SequenceExpression(Box::new(SequenceExpression {
+                                expressions: vec![
+                                    binary_expr!(literal_expr!(4), literal_expr!(3), Plus),
+                                    literal_expr!(5)
+                                ]
+                            }))
+                        ))
                     }]
                 }))
             ]
