@@ -559,7 +559,7 @@ pub struct ClassBody {
 #[derive(Debug, PartialEq)]
 pub enum ClassElement {
     MethodDefinition(MethodDefinition),
-    PropertyDefinition,
+    PropertyDefinition(PropertyDefinition),
     StaticBlock,
 }
 
@@ -604,4 +604,13 @@ pub struct ComputedMemberExpression {
 #[derive(Debug, PartialEq)]
 pub struct SequenceExpression {
     pub expressions: Vec<Expression>,
+}
+
+/// https://github.com/estree/estree/blob/master/es2022.md#propertydefinition
+#[derive(Debug, PartialEq)]
+pub struct PropertyDefinition {
+    pub key: Expression,
+    pub value: Option<Expression>,
+    pub computed: bool,
+    pub r#static: bool,
 }

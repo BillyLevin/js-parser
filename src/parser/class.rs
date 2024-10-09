@@ -1,7 +1,7 @@
 use crate::{
     ast::{
         Class, ClassBody, ClassElement, Expression, Identifier, MethodDefinition,
-        MethodDefinitionKind,
+        MethodDefinitionKind, PropertyDefinition,
     },
     lexer::token::Token,
     parser::{function::FunctionKind, ParseResult, Parser},
@@ -89,7 +89,21 @@ impl<'src> Parser<'src> {
                     r#static: is_static,
                 }))
             } else {
-                Err(())
+                let field_value = if self.current_token == Token::Equal {
+                    self.next_token();
+                    Some(self.parse_assignment_expression()?)
+                } else {
+                    None
+                };
+
+                self.eat_or_insert_semicolon();
+
+                Ok(ClassElement::PropertyDefinition(PropertyDefinition {
+                    key: element_name,
+                    value: field_value,
+                    computed: is_computed,
+                    r#static: is_static,
+                }))
             }
         }
     }
@@ -119,8 +133,8 @@ mod tests {
             AssignmentExpression, AssignmentOperator, BinaryExpression, BinaryOperator,
             BlockStatement, Class, ClassBody, ClassElement, Declaration, ExpressionStatement,
             Function, Identifier, Literal, MemberExpression, MethodDefinition,
-            MethodDefinitionKind, NumberLiteral, Pattern, ReturnStatement, Statement,
-            StaticMemberExpression, StringLiteral, ThisExpression, VariableDeclaration,
+            MethodDefinitionKind, NumberLiteral, Pattern, PropertyDefinition, ReturnStatement,
+            Statement, StaticMemberExpression, StringLiteral, ThisExpression, VariableDeclaration,
             VariableDeclarationKind, VariableDeclarator,
         },
         lexer::Lexer,
@@ -132,6 +146,16 @@ mod tests {
             var emptyClass = class {};
             var emptyNamedClass = class NamedClass {};
             var testClass = class {
+                publicValue = "hello";
+                static staticPublicValue = 20 * 4;
+                emptyPublicValue;
+                static emptyStaticPublicValue;
+
+                ["computed" + "PublicValue"] = "something"
+                static ["computed" + "StaticPublicValue"] = 4 % 7 / 3;
+                ["computed" + "EmptyPublicValue"];
+                static ["computed" + "EmptyStaticPublicValue"];
+
                 constructor(value) {
                     this.value = value;
                 }
@@ -189,6 +213,82 @@ mod tests {
                             super_class: None,
                             body: ClassBody {
                                 body: vec![
+                                    ClassElement::PropertyDefinition(PropertyDefinition {
+                                        key: ident_expr!("publicValue"),
+                                        value: Some(literal_expr!("hello")),
+                                        computed: false,
+                                        r#static: false,
+                                    }),
+                                    ClassElement::PropertyDefinition(PropertyDefinition {
+                                        key: ident_expr!("staticPublicValue"),
+                                        value: Some(binary_expr!(
+                                            literal_expr!(20),
+                                            literal_expr!(4),
+                                            Multiply
+                                        )),
+                                        computed: false,
+                                        r#static: true,
+                                    }),
+                                    ClassElement::PropertyDefinition(PropertyDefinition {
+                                        key: ident_expr!("emptyPublicValue"),
+                                        value: None,
+                                        computed: false,
+                                        r#static: false,
+                                    }),
+                                    ClassElement::PropertyDefinition(PropertyDefinition {
+                                        key: ident_expr!("emptyStaticPublicValue"),
+                                        value: None,
+                                        computed: false,
+                                        r#static: true,
+                                    }),
+                                    ClassElement::PropertyDefinition(PropertyDefinition {
+                                        key: binary_expr!(
+                                            literal_expr!("computed"),
+                                            literal_expr!("PublicValue"),
+                                            Plus
+                                        ),
+                                        value: Some(literal_expr!("something")),
+                                        computed: true,
+                                        r#static: false,
+                                    }),
+                                    ClassElement::PropertyDefinition(PropertyDefinition {
+                                        key: binary_expr!(
+                                            literal_expr!("computed"),
+                                            literal_expr!("StaticPublicValue"),
+                                            Plus
+                                        ),
+                                        value: Some(binary_expr!(
+                                            binary_expr!(
+                                                literal_expr!(4),
+                                                literal_expr!(7),
+                                                Remainder
+                                            ),
+                                            literal_expr!(3),
+                                            Divide
+                                        )),
+                                        computed: true,
+                                        r#static: true,
+                                    }),
+                                    ClassElement::PropertyDefinition(PropertyDefinition {
+                                        key: binary_expr!(
+                                            literal_expr!("computed"),
+                                            literal_expr!("EmptyPublicValue"),
+                                            Plus
+                                        ),
+                                        value: None,
+                                        computed: true,
+                                        r#static: false,
+                                    }),
+                                    ClassElement::PropertyDefinition(PropertyDefinition {
+                                        key: binary_expr!(
+                                            literal_expr!("computed"),
+                                            literal_expr!("EmptyStaticPublicValue"),
+                                            Plus
+                                        ),
+                                        value: None,
+                                        computed: true,
+                                        r#static: true,
+                                    }),
                                     ClassElement::MethodDefinition(MethodDefinition {
                                         key: ident_expr!("constructor"),
                                         value: Function {
