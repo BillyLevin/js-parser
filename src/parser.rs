@@ -72,7 +72,7 @@ impl<'src> Parser<'src> {
             Token::Semicolon => self.parse_empty_statement(),
             Token::Break => self.parse_break_statement(),
             Token::Continue => self.parse_continue_statement(),
-            Token::LeftBrace => self.parse_block_statement(),
+            Token::LeftBrace => Ok(self.parse_block_statement()?.into()),
             Token::Identifier(_) if self.peek_token == Token::Colon => {
                 self.parse_labeled_statement()
             }
@@ -628,7 +628,7 @@ impl<'src> Parser<'src> {
     }
 
     /// https://tc39.es/ecma262/#prod-BlockStatement
-    fn parse_block_statement(&mut self) -> ParseResult<Statement> {
+    fn parse_block_statement(&mut self) -> ParseResult<BlockStatement> {
         self.expect_current(Token::LeftBrace)?;
 
         let mut statement_list = Vec::new();
@@ -647,9 +647,9 @@ impl<'src> Parser<'src> {
 
         self.expect_current(Token::RightBrace)?;
 
-        Ok(Statement::BlockStatement(BlockStatement {
+        Ok(BlockStatement {
             body: statement_list,
-        }))
+        })
     }
 
     fn parse_labeled_statement(&mut self) -> ParseResult<Statement> {
@@ -727,6 +727,12 @@ impl<'src> Parser<'src> {
         if self.current_token == Token::Semicolon {
             self.next_token();
         }
+    }
+}
+
+impl From<BlockStatement> for Statement {
+    fn from(block: BlockStatement) -> Self {
+        Statement::BlockStatement(block)
     }
 }
 

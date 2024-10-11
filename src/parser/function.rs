@@ -40,9 +40,6 @@ impl<'src> Parser<'src> {
         let params = self.parse_function_params()?;
 
         let body = self.parse_block_statement()?;
-        let Statement::BlockStatement(body) = body else {
-            return Err(());
-        };
 
         Ok(Function { id, params, body })
     }

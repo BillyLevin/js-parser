@@ -67,8 +67,8 @@ impl<'src> Parser<'src> {
             _ => MethodDefinitionKind::Method,
         };
 
-        if matches!(self.current_token, Token::LeftBrace) {
-            todo!("parse static block")
+        if matches!(self.current_token, Token::LeftBrace) && is_static {
+            Ok(ClassElement::StaticBlock(self.parse_block_statement()?))
         } else {
             let (element_name, is_computed) = self.parse_class_element_name()?;
 
@@ -155,6 +155,12 @@ mod tests {
                 static ["computed" + "StaticPublicValue"] = 4 % 7 / 3;
                 ["computed" + "EmptyPublicValue"];
                 static ["computed" + "EmptyStaticPublicValue"];
+
+                static {
+                    var a = 4;
+                    this.value2 = a;
+                    this.value3 = a ** 3;
+                }
 
                 constructor(value) {
                     this.value = value;
@@ -288,6 +294,45 @@ mod tests {
                                         value: None,
                                         computed: true,
                                         r#static: true,
+                                    }),
+                                    ClassElement::StaticBlock(BlockStatement {
+                                        body: vec![
+                                            Statement::Declaration(
+                                                Declaration::VariableDeclaration(
+                                                    VariableDeclaration {
+                                                        kind: VariableDeclarationKind::Var,
+                                                        declarations: vec![VariableDeclarator {
+                                                            id: ident_pattern!("a"),
+                                                            init: Some(literal_expr!(4))
+                                                        }]
+                                                    }
+                                                ),
+                                            ),
+                                            Statement::ExpressionStatement(ExpressionStatement {
+                                                expression: assign_expr!(
+                                                    static_member_expr!(
+                                                        Expression::ThisExpression(ThisExpression),
+                                                        ident!("value2")
+                                                    ),
+                                                    ident_expr!("a"),
+                                                    Assign
+                                                )
+                                            }),
+                                            Statement::ExpressionStatement(ExpressionStatement {
+                                                expression: assign_expr!(
+                                                    static_member_expr!(
+                                                        Expression::ThisExpression(ThisExpression),
+                                                        ident!("value3")
+                                                    ),
+                                                    binary_expr!(
+                                                        ident_expr!("a"),
+                                                        literal_expr!(3),
+                                                        Exponentiation
+                                                    ),
+                                                    Assign
+                                                )
+                                            })
+                                        ]
                                     }),
                                     ClassElement::MethodDefinition(MethodDefinition {
                                         key: ident_expr!("constructor"),

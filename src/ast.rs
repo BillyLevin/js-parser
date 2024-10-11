@@ -560,7 +560,7 @@ pub struct ClassBody {
 pub enum ClassElement {
     MethodDefinition(MethodDefinition),
     PropertyDefinition(PropertyDefinition),
-    StaticBlock,
+    StaticBlock(BlockStatement),
 }
 
 /// https://github.com/estree/estree/blob/master/es2015.md#methoddefinition
