@@ -2032,6 +2032,7 @@ mod tests {
                                     value: Expression::FunctionExpression(Box::new(Function {
                                         id: None,
                                         params: vec![],
+                                        generator: false,
                                         body: BlockStatement {
                                             body: vec![Statement::ReturnStatement(
                                                 ReturnStatement {
@@ -2058,6 +2059,7 @@ mod tests {
                                     value: Expression::FunctionExpression(Box::new(Function {
                                         id: None,
                                         params: vec![ident_pattern!("a"), ident_pattern!("b")],
+                                        generator: false,
                                         body: BlockStatement {
                                             body: vec![Statement::ReturnStatement(
                                                 ReturnStatement { argument: None }
@@ -2082,6 +2084,7 @@ mod tests {
                                     value: Expression::FunctionExpression(Box::new(Function {
                                         id: None,
                                         params: vec![],
+                                        generator: false,
                                         body: BlockStatement {
                                             body: vec![Statement::Declaration(
                                                 Declaration::VariableDeclaration(
@@ -2106,6 +2109,7 @@ mod tests {
                                     value: Expression::FunctionExpression(Box::new(Function {
                                         id: None,
                                         params: vec![],
+                                        generator: false,
                                         body: BlockStatement {
                                             body: vec![Statement::ReturnStatement(
                                                 ReturnStatement {
@@ -2124,6 +2128,7 @@ mod tests {
                                     value: Expression::FunctionExpression(Box::new(Function {
                                         id: None,
                                         params: vec![ident_pattern!("value")],
+                                        generator: false,
                                         body: BlockStatement {
                                             body: vec![Statement::Declaration(
                                                 Declaration::VariableDeclaration(
@@ -2154,6 +2159,7 @@ mod tests {
                         init: Some(Expression::FunctionExpression(Box::new(Function {
                             id: Some(ident!("testFunction")),
                             params: vec![],
+                            generator: false,
                             body: BlockStatement {
                                 body: vec![
                                     Statement::Declaration(Declaration::VariableDeclaration(

@@ -1,5 +1,5 @@
 use crate::{
-    ast::{Declaration, Expression, Function, Identifier, Pattern, Statement},
+    ast::{Declaration, Expression, Function, Pattern, Statement},
     lexer::token::Token,
     parser::{ParseResult, Parser},
 };
@@ -28,6 +28,13 @@ impl<'src> Parser<'src> {
     }
 
     pub(super) fn parse_function(&mut self, kind: FunctionKind) -> ParseResult<Function> {
+        let is_generator = if matches!(self.current_token, Token::Multiply) {
+            self.next_token();
+            true
+        } else {
+            false
+        };
+
         let id = if matches!(self.current_token, Token::LeftParen) {
             match kind {
                 FunctionKind::Declaration => return Err(()),
@@ -41,7 +48,12 @@ impl<'src> Parser<'src> {
 
         let body = self.parse_block_statement()?;
 
-        Ok(Function { id, params, body })
+        Ok(Function {
+            id,
+            params,
+            body,
+            generator: is_generator,
+        })
     }
 
     fn parse_function_params(&mut self) -> ParseResult<Vec<Pattern>> {
@@ -73,12 +85,12 @@ impl<'src> Parser<'src> {
 
 #[cfg(test)]
 mod tests {
-    use test_utils::{binary_expr, ident, ident_pattern, literal_expr};
+    use test_utils::{binary_expr, ident, ident_expr, ident_pattern, literal_expr};
 
     use super::*;
     use crate::{
         ast::{
-            BinaryExpression, BinaryOperator, BlockStatement, BooleanLiteral, Literal,
+            BinaryExpression, BinaryOperator, BlockStatement, BooleanLiteral, Identifier, Literal,
             NumberLiteral, Pattern, StringLiteral, VariableDeclaration, VariableDeclarationKind,
             VariableDeclarator,
         },
@@ -103,6 +115,10 @@ mod tests {
         function basicParams(a, b, c) {
             var d = 45 ** 7;
         }
+
+        function* myGenerator(a, b) {
+            var c = a / b % 4 & 27;
+        }
         "#;
 
         let lexer = Lexer::new(input);
@@ -116,6 +132,7 @@ mod tests {
                 Statement::Declaration(Declaration::FunctionDeclaration(Function {
                     id: Some(ident!("noParams")),
                     params: vec![],
+                    generator: false,
                     body: BlockStatement {
                         body: vec![Statement::Declaration(Declaration::VariableDeclaration(
                             VariableDeclaration {
@@ -135,6 +152,7 @@ mod tests {
                         init: Some(Expression::FunctionExpression(Box::new(Function {
                             id: Some(ident!("someName")),
                             params: vec![],
+                            generator: false,
                             body: BlockStatement {
                                 body: vec![Statement::Declaration(
                                     Declaration::VariableDeclaration(VariableDeclaration {
@@ -156,6 +174,7 @@ mod tests {
                         init: Some(Expression::FunctionExpression(Box::new(Function {
                             id: None,
                             params: vec![],
+                            generator: false,
                             body: BlockStatement {
                                 body: vec![Statement::Declaration(
                                     Declaration::VariableDeclaration(VariableDeclaration {
@@ -177,6 +196,7 @@ mod tests {
                         ident_pattern!("b"),
                         ident_pattern!("c"),
                     ],
+                    generator: false,
                     body: BlockStatement {
                         body: vec![Statement::Declaration(Declaration::VariableDeclaration(
                             VariableDeclaration {
@@ -187,6 +207,34 @@ mod tests {
                                         literal_expr!(45),
                                         literal_expr!(7),
                                         Exponentiation
+                                    ))
+                                }]
+                            }
+                        ))]
+                    }
+                })),
+                Statement::Declaration(Declaration::FunctionDeclaration(Function {
+                    id: Some(ident!("myGenerator")),
+                    params: vec![ident_pattern!("a"), ident_pattern!("b")],
+                    generator: true,
+                    body: BlockStatement {
+                        body: vec![Statement::Declaration(Declaration::VariableDeclaration(
+                            VariableDeclaration {
+                                kind: VariableDeclarationKind::Var,
+                                declarations: vec![VariableDeclarator {
+                                    id: ident_pattern!("c"),
+                                    init: Some(binary_expr!(
+                                        binary_expr!(
+                                            binary_expr!(
+                                                ident_expr!("a"),
+                                                ident_expr!("b"),
+                                                Divide
+                                            ),
+                                            literal_expr!(4),
+                                            Remainder
+                                        ),
+                                        literal_expr!(27),
+                                        BitwiseAnd
                                     ))
                                 }]
                             }

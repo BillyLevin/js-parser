@@ -538,6 +538,7 @@ pub enum PropertyKind {
 pub struct Function {
     pub id: Option<Identifier>,
     pub params: Vec<Pattern>,
+    pub generator: bool,
     pub body: BlockStatement,
 }
 

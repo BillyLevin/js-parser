@@ -339,6 +339,7 @@ mod tests {
                                         value: Function {
                                             id: None,
                                             params: vec![ident_pattern!("value")],
+                                            generator: false,
                                             body: BlockStatement {
                                                 body: vec![Statement::ExpressionStatement(
                                                     ExpressionStatement {
@@ -365,6 +366,7 @@ mod tests {
                                         value: Function {
                                             id: None,
                                             params: vec![],
+                                            generator: false,
                                             body: BlockStatement {
                                                 body: vec![Statement::ReturnStatement(
                                                     ReturnStatement {
@@ -387,6 +389,7 @@ mod tests {
                                         value: Function {
                                             id: None,
                                             params: vec![ident_pattern!("num")],
+                                            generator: false,
                                             body: BlockStatement {
                                                 body: vec![Statement::ExpressionStatement(
                                                     ExpressionStatement {
@@ -413,6 +416,7 @@ mod tests {
                                         value: Function {
                                             id: None,
                                             params: vec![],
+                                            generator: false,
                                             body: BlockStatement {
                                                 body: vec![Statement::ReturnStatement(
                                                     ReturnStatement {
