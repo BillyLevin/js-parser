@@ -12,7 +12,7 @@ use crate::{
         Property, PropertyKind, RegExp, RegExpLiteral, ReturnStatement, SequenceExpression,
         SpreadElement, Statement, StaticMemberExpression, StringLiteral, ThisExpression,
         UnaryExpression, UnaryOperator, UpdateExpression, UpdateOperator, VariableDeclaration,
-        VariableDeclarationKind, VariableDeclarator,
+        VariableDeclarationKind, VariableDeclarator, YieldExpression,
     },
     lexer::{token::Token, Lexer},
     parser::function::FunctionKind,
@@ -155,7 +155,11 @@ impl<'src> Parser<'src> {
     ///
     /// this function handles the ECMAScript version (which includes the estree version as a subset)
     fn parse_assignment_expression(&mut self) -> ParseResult<Expression> {
-        self.parse_binary_expression(Precedence::Comma)
+        if matches!(self.current_token, Token::Yield) {
+            self.parse_yield_expression()
+        } else {
+            self.parse_binary_expression(Precedence::Comma)
+        }
     }
 
     fn parse_binary_expression(&mut self, min_precedence: Precedence) -> ParseResult<Expression> {
@@ -280,6 +284,26 @@ impl<'src> Parser<'src> {
             Token::Class => self.parse_class_expression(),
             _ => Err(()),
         }
+    }
+
+    /// https://tc39.es/ecma262/#prod-YieldExpression
+    fn parse_yield_expression(&mut self) -> ParseResult<Expression> {
+        self.expect_current(Token::Yield)?;
+
+        let is_delegate = if matches!(self.current_token, Token::Multiply) {
+            self.next_token();
+            true
+        } else {
+            false
+        };
+
+        // TODO: figure out how to know that there is no assignment expression to parse (since it's optional)
+        let argument = Some(self.parse_assignment_expression()?);
+
+        Ok(Expression::YieldExpression(Box::new(YieldExpression {
+            argument,
+            delegate: is_delegate,
+        })))
     }
 
     fn parse_member_expression(&mut self) -> ParseResult<Expression> {

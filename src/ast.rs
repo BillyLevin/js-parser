@@ -140,6 +140,7 @@ pub enum Expression {
     FunctionExpression(Box<Function>),
     ClassExpression(Box<Class>),
     SequenceExpression(Box<SequenceExpression>),
+    YieldExpression(Box<YieldExpression>),
 }
 
 /// https://github.com/estree/estree/blob/master/es5.md#literal
@@ -614,4 +615,11 @@ pub struct PropertyDefinition {
     pub value: Option<Expression>,
     pub computed: bool,
     pub r#static: bool,
+}
+
+/// https://github.com/estree/estree/blob/master/es2015.md#yieldexpression
+#[derive(Debug, PartialEq)]
+pub struct YieldExpression {
+    pub argument: Option<Expression>,
+    pub delegate: bool,
 }

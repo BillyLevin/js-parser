@@ -90,9 +90,9 @@ mod tests {
     use super::*;
     use crate::{
         ast::{
-            BinaryExpression, BinaryOperator, BlockStatement, BooleanLiteral, Identifier, Literal,
-            NumberLiteral, Pattern, StringLiteral, VariableDeclaration, VariableDeclarationKind,
-            VariableDeclarator,
+            BinaryExpression, BinaryOperator, BlockStatement, BooleanLiteral, ExpressionStatement,
+            Identifier, Literal, NumberLiteral, Pattern, StringLiteral, VariableDeclaration,
+            VariableDeclarationKind, VariableDeclarator, YieldExpression,
         },
         lexer::Lexer,
     };
@@ -118,6 +118,8 @@ mod tests {
 
         function* myGenerator(a, b) {
             var c = a / b % 4 & 27;
+            yield c;
+            yield* delegated;
         }
         "#;
 
@@ -218,27 +220,45 @@ mod tests {
                     params: vec![ident_pattern!("a"), ident_pattern!("b")],
                     generator: true,
                     body: BlockStatement {
-                        body: vec![Statement::Declaration(Declaration::VariableDeclaration(
-                            VariableDeclaration {
-                                kind: VariableDeclarationKind::Var,
-                                declarations: vec![VariableDeclarator {
-                                    id: ident_pattern!("c"),
-                                    init: Some(binary_expr!(
-                                        binary_expr!(
+                        body: vec![
+                            Statement::Declaration(Declaration::VariableDeclaration(
+                                VariableDeclaration {
+                                    kind: VariableDeclarationKind::Var,
+                                    declarations: vec![VariableDeclarator {
+                                        id: ident_pattern!("c"),
+                                        init: Some(binary_expr!(
                                             binary_expr!(
-                                                ident_expr!("a"),
-                                                ident_expr!("b"),
-                                                Divide
+                                                binary_expr!(
+                                                    ident_expr!("a"),
+                                                    ident_expr!("b"),
+                                                    Divide
+                                                ),
+                                                literal_expr!(4),
+                                                Remainder
                                             ),
-                                            literal_expr!(4),
-                                            Remainder
-                                        ),
-                                        literal_expr!(27),
-                                        BitwiseAnd
-                                    ))
-                                }]
-                            }
-                        ))]
+                                            literal_expr!(27),
+                                            BitwiseAnd
+                                        ))
+                                    }]
+                                }
+                            )),
+                            Statement::ExpressionStatement(ExpressionStatement {
+                                expression: Expression::YieldExpression(Box::new(
+                                    YieldExpression {
+                                        argument: Some(ident_expr!("c")),
+                                        delegate: false
+                                    }
+                                ))
+                            }),
+                            Statement::ExpressionStatement(ExpressionStatement {
+                                expression: Expression::YieldExpression(Box::new(
+                                    YieldExpression {
+                                        argument: Some(ident_expr!("delegated")),
+                                        delegate: true
+                                    }
+                                ))
+                            })
+                        ]
                     }
                 })),
             ]
